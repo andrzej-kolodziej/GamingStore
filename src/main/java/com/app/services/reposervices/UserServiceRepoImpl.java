@@ -34,12 +34,12 @@ public class UserServiceRepoImpl implements UserService {
 
     @Override
     public User getById(Integer id) {
-        return userRepository.findOne(id);
+        return userRepository.findById(id).get();
     }
 
     @Override
     public UserForm findUserFormById(Integer id) {
-        return userToUserForm.convert(userRepository.findOne(id));
+        return userToUserForm.convert(userRepository.findById(id).get());
     }
 
     @Override
@@ -54,10 +54,10 @@ public class UserServiceRepoImpl implements UserService {
 
     @Override
     public void delete(Integer id) {
-        User temp = userRepository.findOne(id);
+        User temp = userRepository.findById(id).get();
         temp.removeAllRoles();
         userRepository.save(temp);
-        userRepository.delete(id);
+        userRepository.deleteById(id);
     }
 
     @Override

@@ -44,7 +44,7 @@ public class ProductServiceRepoImpl implements ProductService {
     @Override
     @Cacheable(cacheNames = "product", key = "#id")
     public Product getById(Integer id) {
-        return productRepository.findOne(id);
+        return productRepository.findById(id).get();
     }
 
     @Override
@@ -57,12 +57,12 @@ public class ProductServiceRepoImpl implements ProductService {
     @Override
     @Caching(evict = {@CacheEvict(cacheNames = "products", allEntries = true), @CacheEvict(cacheNames = "product", key = "#id")})
     public void delete(Integer id) {
-        Product product = productRepository.findOne(id);
+        Product product = productRepository.findById(id).get();
         product.getBundles().forEach(bundle -> {
             bundle.deleteProduct(product);
             bundleService.saveOrUpdate(bundle);
         });
-        productRepository.delete(id);
+        productRepository.deleteById(id);
     }
 
     @Override
@@ -74,6 +74,6 @@ public class ProductServiceRepoImpl implements ProductService {
 
     @Override
     public ProductForm findProductFormById(Integer id) {
-        return productToProductForm.convert(productRepository.findOne(id));
+        return productToProductForm.convert(productRepository.findById(id).get());
     }
 }

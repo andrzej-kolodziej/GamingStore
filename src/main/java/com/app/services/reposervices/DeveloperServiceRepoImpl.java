@@ -36,7 +36,7 @@ public class DeveloperServiceRepoImpl implements DeveloperService {
 
     @Override
     public Developer getById(Integer id) {
-        return developerRepository.findOne(id);
+        return developerRepository.findById(id).get();
     }
 
     @Override
@@ -46,8 +46,8 @@ public class DeveloperServiceRepoImpl implements DeveloperService {
 
     @Override
     public void delete(Integer id) {
-        developerRepository.findOne(id).getProducts().forEach(product -> product.setDeveloper(developerRepository.findOne(1)));
-        developerRepository.delete(id);
+        developerRepository.findById(id).get().getProducts().forEach(product -> product.setDeveloper(developerRepository.findById(1).get()));
+        developerRepository.deleteById(id);
     }
 
     @Override
@@ -58,6 +58,6 @@ public class DeveloperServiceRepoImpl implements DeveloperService {
 
     @Override
     public DeveloperForm getDeveloperFormById(Integer id) {
-        return developerToDeveloperForm.convert(developerRepository.findOne(id));
+        return developerToDeveloperForm.convert(developerRepository.findById(id).get());
     }
 }

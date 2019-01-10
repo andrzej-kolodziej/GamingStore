@@ -33,7 +33,7 @@ public class BundleServiceReopImpl implements BundleService {
     @Override
     @Cacheable(cacheNames = "bundle", key = "#id")
     public Bundle getById(Integer id) {
-        return bundleRepository.findOne(id);
+        return bundleRepository.findById(id).get();
     }
 
     @Override
@@ -46,7 +46,7 @@ public class BundleServiceReopImpl implements BundleService {
     @Override
     @Caching(evict = {@CacheEvict(cacheNames = "bundles", allEntries = true), @CacheEvict(cacheNames = "bundle", key = "#id")})
     public void delete(Integer id) {
-        bundleRepository.delete(id);
+        bundleRepository.deleteById(id);
     }
 
     @Override
