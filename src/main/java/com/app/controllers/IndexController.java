@@ -3,6 +3,7 @@ package com.app.controllers;
 import com.app.domain.Bundle;
 import com.app.domain.User;
 import com.app.services.BundleService;
+import com.app.services.DummyDataGeneration;
 import com.app.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -28,6 +29,9 @@ public class IndexController {
     @Autowired
     UserService userService;
 
+    @Autowired
+    DummyDataGeneration dummyDataGeneration;
+
     @ModelAttribute("page")
     public String module() {
         return "index";
@@ -46,6 +50,8 @@ public class IndexController {
             model.addAttribute("products", bundle.getProducts());
         }
         setupUserEmail(model, principal, session);
+        if (!dummyDataGeneration.getInitaitedStatus())
+            dummyDataGeneration.generate();
         return "index";
     }
 

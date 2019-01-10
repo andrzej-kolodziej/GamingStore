@@ -18,7 +18,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 @Controller
 @SessionAttributes({"userEmail"})
-public class AdminCnontroller {
+public class AdminController {
 
     @Autowired
     DummyDataGeneration dummyDataGeneration;
