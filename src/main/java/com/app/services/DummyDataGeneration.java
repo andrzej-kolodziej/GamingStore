@@ -3,6 +3,8 @@ package com.app.services;
 import com.app.domain.*;
 import com.app.services.security.EncryptionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -30,6 +32,11 @@ public class DummyDataGeneration {
     EncryptionService encryptionService;
 
     private static boolean initiated = false;
+
+    /*@EventListener(ApplicationReadyEvent.class)
+    public void generateSampleDataAfterAppStartup() {
+        generate();
+    }*/
 
     public void generate(){
             generateProductsAndBundles();
