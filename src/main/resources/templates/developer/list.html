@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Product Form</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+
+    <link href="../../static/bootstrap/bootstrap.min.css"
+          th:href="@{/bootstrap/bootstrap.min.css}"
+          rel="stylesheet" media="screen" />
+
+    <link href="../../static/css/spring-core.css"
+          th:href="@{/css/spring-core.css}"
+          rel="stylesheet" media="screen" />
+
+    <script th:src="@{/js/jquery-2.2.4.min.js}"></script>
+
+    <script th:src="@{/bootstrap/bootstrap.min.js}"></script>
+
+    <script src="../../static/js/index.js" th:src="@{/js/index.js}"></script>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<div class="container">
+    <div th:if="${not #lists.isEmpty(developers)}">
+        <h2>Developer List</h2>
+        <table class="table table-striped">
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>description</th>
+                <th>registration date</th>
+                <th>List</th>
+                <th>Edit</th>
+                <th>Delete</th>
+            </tr>
+            <tr th:each="developer : ${developers}">
+                <td th:text="${developer.id}"></td>
+                <td th:text="${developer.name}"></td>
+                <td th:text="${developer.description}"></td>
+                <td th:text="${developer.dateCreated}"></td>
+                <td><a th:href="@{/developer/show/__${developer.id}__}">View</a> </td>
+                <td><a th:href="@{/developer/edit/__${developer.id}__}">Edit</a> </td>
+                <td><a class="btn btn-danger btn-sm" th:href="@{/developer/delete/__${developer.id}__}">Delete</a> </td>
+            </tr>
+        </table>
+    </div>
+    <div class="row">
+        <div class="col-sm-3">
+            <a class="btn btn-info" th:href="@{/developer/new}">Create New Developer</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

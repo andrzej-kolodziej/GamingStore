@@ -1,0 +1,1 @@
+INSERT INTO bundle VALUES(1, '2019-01-01 12:00:00', '2019-01-01 12:00:00', 1, 'description', '', 'My Bundle', 10);
