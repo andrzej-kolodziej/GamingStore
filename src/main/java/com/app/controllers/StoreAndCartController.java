@@ -3,7 +3,6 @@ package com.app.controllers;
 import com.app.domain.Cart;
 import com.app.domain.CartDetail;
 import com.app.domain.User;
-import com.app.services.DummyDataGeneration;
 import com.app.services.ProductService;
 import com.app.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +28,7 @@ public class StoreAndCartController {
 
     @Autowired
     ProductService productService;
-    @Autowired
-    DummyDataGeneration dummyDataGeneration;
+
     @Autowired
     UserService userService;
 
@@ -41,8 +39,7 @@ public class StoreAndCartController {
 
     @RequestMapping("/store")
     public String store(Model model, Principal principal, HttpSession session){
-        boolean dataStatus = dummyDataGeneration.getInitaitedStatus();
-        model.addAttribute("initaited",dataStatus);
+        model.addAttribute("initaited",true);
         model.addAttribute("products",productService.listAll());
 
         if (!model.containsAttribute("cart")) {
