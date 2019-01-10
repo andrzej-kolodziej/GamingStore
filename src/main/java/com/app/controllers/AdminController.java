@@ -1,6 +1,5 @@
 package com.app.controllers;
 
-import com.app.services.DummyDataGeneration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
@@ -18,11 +17,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 @Controller
 @SessionAttributes({"userEmail"})
-public class AdminCnontroller {
-
-    @Autowired
-    DummyDataGeneration dummyDataGeneration;
-
+public class AdminController {
 
     @ModelAttribute("page")
     public String module() {
@@ -46,15 +41,12 @@ public class AdminCnontroller {
 
     @RequestMapping("/admin")
     public String admin(Model model){
-        boolean dataStatus = dummyDataGeneration.getInitaitedStatus();
-        model.addAttribute("initaited",dataStatus);
+        model.addAttribute("initaited",true);
         return "admin";
     }
 
     @RequestMapping(value = "/generatedummydata", params = "comeFrom")
     public String generateDummyData(@RequestParam("comeFrom")String comeFrom){
-        if (!dummyDataGeneration.getInitaitedStatus())
-            dummyDataGeneration.generate();
         if (comeFrom.equals("admin")){
             return "redirect:/admin";
         }
@@ -66,7 +58,6 @@ public class AdminCnontroller {
 
     @RequestMapping("/generatedummydata")
     public String directGenerate(){
-        dummyDataGeneration.generate();
         return "redirect:/index";
     }
 

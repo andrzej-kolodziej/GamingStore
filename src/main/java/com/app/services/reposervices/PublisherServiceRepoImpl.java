@@ -27,7 +27,7 @@ public class PublisherServiceRepoImpl implements PublisherService {
 
     @Override
     public Publisher getById(Integer id) {
-        return publisherRepository.findOne(id);
+        return publisherRepository.findById(id).get();
     }
 
     @Override
@@ -37,7 +37,7 @@ public class PublisherServiceRepoImpl implements PublisherService {
 
     @Override
     public void delete(Integer id) {
-        publisherRepository.findOne(id).getProducts().forEach(product -> product.setPublisher(publisherRepository.findOne(1)));
-        publisherRepository.delete(id);
+        publisherRepository.findById(id).get().getProducts().forEach(product -> product.setPublisher(publisherRepository.findById(1).get()));
+        publisherRepository.deleteById(id);
     }
 }
