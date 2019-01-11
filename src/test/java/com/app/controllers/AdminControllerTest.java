@@ -18,14 +18,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@WebMvcTest
+@WebMvcTest(secure = false)
 @AutoConfigureMockMvc
 public class AdminControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Test
-    public void should_return_200_status() throws Exception {
-        mockMvc.perform(get("/workinprogress")).andExpect(status().isOk());
-    }
 }

@@ -13,10 +13,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -32,6 +29,39 @@ public class BundleRepositoryTest {
     @Test
     public void whenFindById_thenReturnBundle() {
         //given
+        Bundle bundle = generateSampleBundle();
+
+        testEntityManager.persist(bundle);
+        testEntityManager.flush();
+
+        //when
+        Bundle found = bundleRepository.findById(bundle.getId()).get();
+
+        //then
+        assertThat(found.getId()).isEqualTo(bundle.getId());
+    }
+
+    @Test
+    public void whenFindAll_thenReturnAllBundles() {
+        //given
+        Bundle bundle1 = generateSampleBundle();
+        Bundle bundle2 = generateSampleBundle();
+
+        testEntityManager.persist(bundle1);
+        testEntityManager.persist(bundle2);
+        testEntityManager.flush();
+
+        //when
+        Iterable<Bundle> bundles = bundleRepository.findAll();
+        Bundle foundBundle1 = bundles.iterator().next();
+        Bundle foundBundle2 = bundles.iterator().next();
+
+        //then
+        assertThat(foundBundle1.getId()).isEqualTo(bundle1.getId());
+        assertThat(foundBundle2.getId()).isEqualTo(bundle2.getId());
+    }
+
+    private Bundle generateSampleBundle() {
         Bundle bundle = new Bundle();
 
         Set<Product> products = new HashSet<>();
@@ -54,13 +84,6 @@ public class BundleRepositoryTest {
         products.add(product);
 
         bundle.setProducts(products);
-        testEntityManager.persist(bundle);
-        testEntityManager.flush();
-
-        //when
-        Bundle found = bundleRepository.findById(bundle.getId()).get();
-
-        //then
-        assertThat(found.getId()).isEqualTo(bundle.getId());
+        return bundle;
     }
 }
