@@ -88,9 +88,9 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
                 .invalidateHttpSession(true)
                 .logoutSuccessUrl("/store")
                 .and()
-                .exceptionHandling().accessDeniedPage("/access_denied");
-                /*.and()
+                .exceptionHandling().accessDeniedPage("/access_denied")
+                .and()
                 .rememberMe()
-                .tokenValiditySeconds(2678400);*/
+                .tokenValiditySeconds(2678400);
     }
 }
