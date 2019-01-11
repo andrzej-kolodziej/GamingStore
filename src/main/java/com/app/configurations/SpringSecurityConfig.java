@@ -1,6 +1,7 @@
 package com.app.configurations;
 
 
+import com.app.services.security.SpringSecUserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -33,6 +34,9 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
     private AuthenticationProvider authenticationProvider;
 
     @Autowired
+    private SpringSecUserDetailsServiceImpl userDetailsService;
+
+    @Autowired
     @Qualifier("daoAuthenticationProvider")
     public void setAuthenticationProvider(AuthenticationProvider authenticationProvider) {
         this.authenticationProvider = authenticationProvider;
@@ -44,9 +48,9 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Bean
-    public DaoAuthenticationProvider daoAuthenticationProvider(PasswordEncoder passwordEncoder, @Qualifier("springSecUserDetailsServiceImpl") UserDetailsService userDetailsService){
+    public DaoAuthenticationProvider daoAuthenticationProvider(){
         DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
-        daoAuthenticationProvider.setPasswordEncoder(passwordEncoder);
+        daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
         daoAuthenticationProvider.setUserDetailsService(userDetailsService);
         return daoAuthenticationProvider;
     }
@@ -88,9 +92,9 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
                 .invalidateHttpSession(true)
                 .logoutSuccessUrl("/store")
                 .and()
-                .exceptionHandling().accessDeniedPage("/access_denied")
-                .and()
+                .exceptionHandling().accessDeniedPage("/access_denied");
+                /*.and()
                 .rememberMe()
-                .tokenValiditySeconds(2678400);
+                .tokenValiditySeconds(2678400);*/
     }
 }
