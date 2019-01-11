@@ -6,6 +6,7 @@ import com.app.services.security.EncryptionService;
 import com.app.services.security.SpringSecUserDetailsServiceImpl;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -17,6 +18,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
@@ -40,7 +42,10 @@ public class CustomerControllerTest {
 
     @Test
     @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
-    public void should_return_200_status() throws Exception {
+    //@WithMockUser(username = "admin", roles { "ROLE_ADMIN})
+    public void givenAuthUser_whenGetOrderHistory_thenReturnOkStatusAndOrderHistoryView() throws Exception {
         mockMvc.perform(get("/customer/orderhistory")).andExpect(status().isOk()).andExpect(view().name("customer/orderhistory"));
+        verify(userService).findByUserName("admin");
+        verifyNoMoreInteractions(userService);
     }
 }
