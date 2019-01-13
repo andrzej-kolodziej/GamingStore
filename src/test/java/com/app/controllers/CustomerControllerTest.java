@@ -2,6 +2,7 @@ package com.app.controllers;
 
 import com.app.commands.UserForm;
 import com.app.configuration.SpringSecurityTestConfig;
+import com.app.configurations.SpringSecurityConfig;
 import com.app.domain.Role;
 import com.app.domain.User;
 import com.app.services.*;
@@ -19,6 +20,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.hamcrest.Matchers.*;
@@ -27,11 +29,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(SpringRunner.class)
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        classes = SpringSecurityTestConfig.class)
+        classes = {SpringSecurityTestConfig.class, /*SpringSecurityConfig.class*/})
 @TestPropertySource(
         locations = "classpath:application.properties")
 @AutoConfigureMockMvc
 public class CustomerControllerTest {
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -40,29 +43,6 @@ public class CustomerControllerTest {
 
     @MockBean
     private RoleService roleService;
-
-    @Test
-    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
-    public void givenAuthUserAndValidCustomerForm_whenPostNewCustomer_thenReturnOkStatusAndCreateNewCustomerToDbAndRedirectToLoginPage() throws Exception {
-        when(roleService.getById(anyInt())).thenReturn(mock(Role.class));
-
-        mockMvc.perform(post("/customer/post")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("userName", "username")
-                .param("userEmail", "email")
-                .param("userPassword", "passwd"))
-                .andExpect(status().isOk())
-                .andExpect(redirectedUrl("/login"));
-
-        ArgumentCaptor<UserForm> formObjectArgument = ArgumentCaptor.forClass(UserForm.class);
-        UserForm userForm = formObjectArgument.getValue();
-        int dummyId = 1;
-        verify(userForm, times(1)).addRole(roleService.getById(dummyId));
-        verifyNoMoreInteractions(userForm);
-        verify(userService, times(1)).saveOrUpdateUserForm(formObjectArgument.capture());
-        verifyNoMoreInteractions(userService);
-
-    }
 
     @Test
     @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
@@ -92,7 +72,79 @@ public class CustomerControllerTest {
     public void whenGetCreateUser_thenReturnOkStatusAndCustomerFormView() throws Exception {
         mockMvc.perform(get("/customer/new"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("customer/customerForm"));
+                .andExpect(view().name("customer/customerform"));
+    }
+
+    @Test
+    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
+    public void givenAuthUserAndValidCustomerForm_whenPostNewCustomer_thenReturnFoundStatusAndCreateNewCustomerToDbAndRedirectToLoginPage() throws Exception {
+        when(roleService.getById(anyInt())).thenReturn(mock(Role.class));
+
+        mockMvc.perform(post("/customer/post")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("userName", "username")
+                .param("userEmail", "email")
+                .param("userPassword", "passwd").with(csrf()))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/login"));
+
+        ArgumentCaptor<UserForm> formObjectArgument = ArgumentCaptor.forClass(UserForm.class);
+        verify(userService, times(1)).saveOrUpdateUserForm(formObjectArgument.capture());
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    @WithUserDetails(value = "user", userDetailsServiceBeanName = "userDetailsService")
+    public void givenAuthUserAndNoCsrfToken_whenPostNewCustomer_thenReturnForbiddenStatus() throws Exception {
+        mockMvc.perform(post("/customer/post")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("userName", "username")
+                .param("userEmail", "email")
+                .param("userPassword", "passwd"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithUserDetails(value = "user", userDetailsServiceBeanName = "userDetailsService")
+    public void givenAuthUserAndInvalidUserForm_whenPostNewCustomer_thenReturnCustomerFormView() throws Exception {
+        mockMvc.perform(post("/customer/post")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("userName", "")
+                .param("userEmail", "")
+                .param("userPassword", "").with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("customer/customerform"));
+    }
+
+    @Test
+    public void givenValidFormWithCsrfTokenAndNotAuthUser_whenPostNewCustomer_thenReturnForbiddenStatus() throws Exception {
+        mockMvc.perform(post("/customer/post")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("userName", "username")
+                .param("userEmail", "email")
+                .param("userPassword", "passwd").with(csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithUserDetails(value = "user", userDetailsServiceBeanName = "userDetailsService")
+    public void givenAuthUser_whenGetCustomerSetting_thenReturnUserForm() throws Exception {
+        UserForm mockUserForm = mock(UserForm.class);
+        User mockUser = mock(User.class);
+        mockUser.setId(1);
+        when(userService.findByUserName("user")).thenReturn(mockUser);
+        when(userService.findUserFormById(1)).thenReturn(mockUserForm);
+        mockMvc.perform(get("/customer/setting"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("userForm", mockUserForm))
+                .andExpect(view().name("customer/customerform"));
+    }
+
+    @Test
+    public void givenNotAuthUser_whenGetCustomerSetting_thenReturnAccessDeniedViewAndOkStatus() throws Exception {
+        mockMvc.perform(get("/customer/setting"))
+                .andExpect(view().name("access_denied"))
+                .andExpect(status().isOk());
     }
 
 
