@@ -61,6 +61,18 @@ public class BundleRepositoryTest {
         assertThat(foundBundle2.getId()).isEqualTo(bundle2.getId());
     }
 
+    @Test
+    public void whenSaveBundle_thenBundleIsPersisted() {
+        //given
+        Bundle bundle = generateSampleBundle();
+
+        //when
+        bundleRepository.save(bundle);
+
+        //then
+        assertThat(bundle.getId()).isNotZero();
+    }
+
     private Bundle generateSampleBundle() {
         Bundle bundle = new Bundle();
 
@@ -86,4 +98,5 @@ public class BundleRepositoryTest {
         bundle.setProducts(products);
         return bundle;
     }
+
 }
