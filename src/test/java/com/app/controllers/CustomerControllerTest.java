@@ -62,9 +62,9 @@ public class CustomerControllerTest {
     }
 
     @Test
-    public void givenNoAuthUser_whenGetOrderHistory_thenReturnOkStatusAndAccessDeniedView() throws Exception {
+    public void givenNoAuthUser_whenGetOrderHistory_thenReturnFoundStatusAndAccessDeniedView() throws Exception {
         mockMvc.perform(get("/customer/orderhistory"))
-                .andExpect(status().isOk())
+                .andExpect(status().isFound())
                 .andExpect(view().name("access_denied"));
     }
 
@@ -146,6 +146,5 @@ public class CustomerControllerTest {
                 .andExpect(view().name("access_denied"))
                 .andExpect(status().isOk());
     }
-
 
 }
