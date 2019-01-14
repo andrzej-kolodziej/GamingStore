@@ -2,6 +2,7 @@ package com.app.controllers;
 
 import com.app.commands.BundleForm;
 import com.app.configuration.SpringSecurityTestConfig;
+import com.app.configurations.SpringSecurityConfig;
 import com.app.converters.BundleFormToBundle;
 import com.app.converters.BundleToBundleForm;
 import com.app.domain.Bundle;
@@ -10,10 +11,14 @@ import com.app.services.ProductService;
 import com.app.services.sortList.ListSortingService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -30,13 +35,16 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        classes = {SpringSecurityTestConfig.class, /*SpringSecurityConfig.class*/})
+
+        classes = {/*SpringSecurityTestConfig.class,*/ /*SpringSecurityConfig.class*/})
 @TestPropertySource(
         locations = "classpath:application.properties")
 @AutoConfigureMockMvc(secure = false)
@@ -60,39 +68,9 @@ public class BundleControllerTest {
     @MockBean
     private BundleToBundleForm bundleToBundleForm;
 
-    @Test
-    public void givenNotAuthUser_whenGetList_thenReturnFoundStatusAndRedirectToLogin() throws Exception {
-        mockMvc.perform(get("/bundle/list"))
-                .andExpect(status().isFound())
-                .andExpect(redirectedUrl("http://localhost/login"));
-    }
 
     @Test
-    public void givenNotAuthUser_whenGetRootPath_thenReturnFoundStatusAndRedirectToLogin() throws Exception {
-        mockMvc.perform(get("/bundle/"))
-                .andExpect(status().isFound())
-                .andExpect(redirectedUrl("http://localhost/login"));
-    }
-
-    @Test
-    @WithUserDetails(value = "user", userDetailsServiceBeanName = "userDetailsService")
-    public void givenAuthUserWithoutAdminRole_whenGetList_thenReturnForbiddenStatusAndRedirectToLogin() throws Exception {
-        mockMvc.perform(get("/bundle/list"))
-                .andExpect(status().isForbidden())
-                .andExpect(redirectedUrl("http://localhost/login"));
-    }
-
-    @Test
-    @WithUserDetails(value = "user", userDetailsServiceBeanName = "userDetailsService")
-    public void givenAuthUserWithoutAdminRole_whenGetRoot_thenReturnForbiddenStatusAndRedirectToLogin() throws Exception {
-        mockMvc.perform(get("/bundle/"))
-                .andExpect(status().isForbidden())
-                .andExpect(redirectedUrl("http://localhost/login"));
-    }
-
-    @Test
-    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
-    public void givenAuthUser_whenGetList_thenReturnOkStatusAndReturnBundleList() throws Exception {
+    public void whenGetList_thenReturnOkStatusAndReturnBundleList() throws Exception {
         List mockBundles = new ArrayList<>();
         Bundle bundle = new Bundle();
         bundle.setId(1);
@@ -108,7 +86,6 @@ public class BundleControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
     public void givenAuthUser_whenGetRootPath_thenReturnOkStatusAndReturnBundleList() throws Exception {
         List mockBundles = new ArrayList<>();
         Bundle bundle = new Bundle();
@@ -125,8 +102,7 @@ public class BundleControllerTest {
     }
 
     @Test(expected = NullPointerException.class)
-    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
-    public void givenAuthUserAndBundleServiceReturnsNull_whenGetList_thenReturnOkStatusAndThrowsException() throws Exception {
+    public void givenBundleServiceReturnsNull_whenGetList_thenReturnOkStatusAndThrowsException() throws Exception {
         when(bundleService.listAll()).thenReturn(null);
         mockMvc.perform(get("/bundle/list"))
                 .andExpect(status().isOk())
@@ -134,8 +110,7 @@ public class BundleControllerTest {
     }
 
     @Test(expected = NullPointerException.class)
-    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
-    public void givenAuthUserAndBundleServiceReturnsNull_whenGetRootPath_thenReturnOkStatusAndThrowsException() throws Exception {
+    public void givenBundleServiceReturnsNull_whenGetRootPath_thenReturnOkStatusAndThrowsException() throws Exception {
         when(bundleService.listAll()).thenReturn(null);
         mockMvc.perform(get("/bundle/"))
                 .andExpect(status().isOk())
@@ -143,23 +118,7 @@ public class BundleControllerTest {
     }
 
     @Test
-    public void givenNotAuthUser_whenGetNew_thenReturnFoundStatusAndRedirectToLogin() throws Exception {
-        mockMvc.perform(get("/bundle/new"))
-                .andExpect(status().isFound())
-                .andExpect(redirectedUrl("http://localhost/login"));
-    }
-
-    @Test
-    @WithUserDetails(value = "user", userDetailsServiceBeanName = "userDetailsService")
-    public void givenAuthUserWithoutAdminRole_whenGetNew_thenReturnForbiddenStatusAndRedirectToLogin() throws Exception {
-        mockMvc.perform(get("/bundle/new"))
-                .andExpect(status().isForbidden())
-                .andExpect(redirectedUrl("http://localhost/login"));
-    }
-
-    @Test
-    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
-    public void givenAuthUser_whenGetNew_thenReturnOkStatusAndReturnBundleForm() throws Exception {
+    public void whenGetNew_thenReturnOkStatusAndReturnBundleForm() throws Exception {
         mockMvc.perform(get("/bundle/new"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("bundle/bundleform"))
@@ -167,23 +126,7 @@ public class BundleControllerTest {
     }
 
     @Test
-    public void givenNotAuthUser_whenGetShowGivenId_thenReturnFoundStatusAndRedirectToLogin() throws Exception {
-        mockMvc.perform(get("/bundle/show/{id}", 1))
-                .andExpect(status().isFound())
-                .andExpect(redirectedUrl("http://localhost/login"));
-    }
-
-    @Test
-    @WithUserDetails(value = "user", userDetailsServiceBeanName = "userDetailsService")
-    public void givenAuthUserWithoutAdminRole_whenGetShowGivenId_thenReturnForbiddenStatusAndRedirectToLogin() throws Exception {
-        mockMvc.perform(get("/bundle/show/{id}"))
-                .andExpect(status().isForbidden())
-                .andExpect(redirectedUrl("http://localhost/login"));
-    }
-
-    @Test
-    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
-    public void givenAuthUser_whenGetShowGivenId_thenReturnOkStatusAndReturnGivenBundle() throws Exception {
+    public void _whenGetShowGivenId_thenReturnOkStatusAndReturnGivenBundle() throws Exception {
         Bundle mockBundle = mock(Bundle.class);
         when(bundleService.getById(anyInt())).thenReturn(mockBundle);
 
@@ -197,8 +140,7 @@ public class BundleControllerTest {
     }
 
     @Test(expected = NestedServletException.class)
-    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
-    public void givenAuthUserBundleServiceReturnsNull_whenGetShowGivenId_thenReturnOkStatusAndThrowException() throws Exception {
+    public void givenBundleServiceReturnsNull_whenGetShowGivenId_thenReturnOkStatusAndThrowException() throws Exception {
         when(bundleService.getById(anyInt())).thenReturn(null);
 
         mockMvc.perform(get("/bundle/show/{id}", 1))
@@ -208,23 +150,7 @@ public class BundleControllerTest {
     }
 
     @Test
-    public void givenNotAuthUser_whenGetEditGivenId_thenReturnFoundStatusAndRedirectToLogin() throws Exception {
-        mockMvc.perform(get("/bundle/edit/{id}", 1))
-                .andExpect(status().isFound())
-                .andExpect(redirectedUrl("http://localhost/login"));
-    }
-
-    @Test
-    @WithUserDetails(value = "user", userDetailsServiceBeanName = "userDetailsService")
-    public void givenAuthUserWithoutAdminRole_whenGetEditGivenId_thenReturnForbiddenStatusAndRedirectToLogin() throws Exception {
-        mockMvc.perform(get("/bundle/edit/{id}"))
-                .andExpect(status().isForbidden())
-                .andExpect(redirectedUrl("http://localhost/login"));
-    }
-
-    @Test
-    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
-    public void givenAuthUser_whenGetEditGivenId_thenReturnOkStatusAndReturnBundleForm() throws Exception {
+    public void whenGetEditGivenId_thenReturnOkStatusAndReturnBundleForm() throws Exception {
         Bundle mockBundle = mock(Bundle.class);
         BundleToBundleForm bundleToBundleFormMock = mock(BundleToBundleForm.class);
 
@@ -253,8 +179,7 @@ public class BundleControllerTest {
     }
 
     @Test(expected = NullPointerException.class)
-    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
-    public void givenAuthUserBundleServiceReturnsNull_whenGetEditGivenId_thenReturnOkStatusAndThrowException() throws Exception {
+    public void givenBundleServiceReturnsNull_whenGetEditGivenId_thenReturnOkStatusAndThrowException() throws Exception {
         when(bundleService.getById(anyInt())).thenReturn(null);
 
         mockMvc.perform(get("/bundle/edit/{id}", 1))
@@ -266,4 +191,27 @@ public class BundleControllerTest {
         verifyNoMoreInteractions(bundleService);
     }
 
+    @Test
+    public void givenValidBundleForm_whenPostToSaveOrUpdateBundle_thenBundleIsSavedIntoDbANdRedirectedToBundleShow() throws Exception {
+        Bundle bundleMock = mock(Bundle.class);
+        bundleMock.setId(1);
+        bundleMock.setDescription("description");
+        bundleMock.setImageUrl("url");
+        bundleMock.setName("name");
+        bundleMock.setPrice(BigDecimal.valueOf(10));
+
+        when(bundleService.saveOrUpdate(any())).thenReturn(bundleMock);
+
+        mockMvc.perform(post("/bundle")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("bundleName", "name")
+                .param("bundleDescription", "description")
+                .param("bundleImageUrl", "url")
+                .param("bundlePrice", "10").with(csrf()))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/bundle/show/0"));
+
+        verify(bundleService, times(1)).saveOrUpdate(any());
+        verifyNoMoreInteractions(bundleService);
+    }
 }
