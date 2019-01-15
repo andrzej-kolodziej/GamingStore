@@ -28,8 +28,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        classes = SpringSecurityTestConfig.class)
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
+        /*classes = SpringSecurityTestConfig.class*/)
 @TestPropertySource(
         locations = "classpath:application.properties")
 @AutoConfigureMockMvc
@@ -59,15 +59,7 @@ public class AdminControllerTest {
     }
 
     @Test
-    public void givenNoAuthUser_whenGetAdmin_thenReturnFoundStatusAndRedirectToLoginPage() throws Exception {
-        mockMvc.perform(get("/admin"))
-                .andExpect(status().isFound())
-                .andExpect(redirectedUrl("http://localhost/login"));
-    }
-
-    @Test
-    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
-    public void givenAuthUser_whenGetAdmin_thenReturnOkStatusAndViewAdmin() throws Exception {
+    public void whenGetAdmin_thenReturnOkStatusAndViewAdmin() throws Exception {
         mockMvc.perform(get("/admin"))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("initaited", true))
