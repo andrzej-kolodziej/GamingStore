@@ -214,4 +214,25 @@ public class BundleControllerTest {
         verify(bundleService, times(1)).saveOrUpdate(any());
         verifyNoMoreInteractions(bundleService);
     }
+
+    @Test
+    public void givenInvalidBundleForm_whenPostToSaveOrUpdateBundle_thenReturnOkStatusAndBundleFormView() throws Exception {
+        mockMvc.perform(post("/bundle")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("bundleName", "")
+                .param("bundleDescription", "")
+                .param("bundleImageUrl", "")
+                .param("bundlePrice", "").with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("bundle/bundleform"));
+    }
+
+    @Test
+    public void whenDeleteBundle_thenRemoveBundleWithGivenIdFromDbAndReturnFoundStatusAndRedirectToBundleList() throws Exception {
+        mockMvc.perform(get("/bundle/delete/{id}", 1))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/bundle/list"));
+        verify(bundleService, times(1)).delete(1);
+        verifyNoMoreInteractions(bundleService);
+    }
 }
