@@ -207,17 +207,9 @@ public class DeveloperRepositoryTest {
 
     private Developer generateSampleDeveloper() {
         Developer developer = new Developer();
-
-        Set<Product> products = new HashSet<>();
-
+        developer.setImageUrl("url");
         developer.setDescription("description");
-        developer.setImageUrl("https://dummyimage.com/300");
-        developer.setName("name");
-
-        Publisher publisher = new Publisher();
-        publisher.setDescription("description");
-        publisher.setImageUrl("https://dummyimage.com/300");
-        publisher.setName("name");
+        developer.setName("developer");
 
         return developer;
     }
