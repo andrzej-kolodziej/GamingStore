@@ -70,7 +70,7 @@ public class BundleControllerTest {
 
 
     @Test
-    public void whenGetList_thenReturnOkStatusAndReturnBundleList() throws Exception {
+    public void whenGetList_thenRetrieveAllBundlesFromDbAndReturnListOfThatBundles() throws Exception {
         List mockBundles = new ArrayList<>();
         Bundle bundle = new Bundle();
         bundle.setId(1);
@@ -86,7 +86,7 @@ public class BundleControllerTest {
     }
 
     @Test
-    public void givenAuthUser_whenGetRootPath_thenReturnOkStatusAndReturnBundleList() throws Exception {
+    public void whenGetRootPath_thenRetrieveAllBundlesFromDbAndReturnListOfThatBundles() throws Exception {
         List mockBundles = new ArrayList<>();
         Bundle bundle = new Bundle();
         bundle.setId(1);
@@ -101,24 +101,8 @@ public class BundleControllerTest {
         verifyNoMoreInteractions(bundleService);
     }
 
-    @Test(expected = NullPointerException.class)
-    public void givenBundleServiceReturnsNull_whenGetList_thenReturnOkStatusAndThrowsException() throws Exception {
-        when(bundleService.listAll()).thenReturn(null);
-        mockMvc.perform(get("/bundle/list"))
-                .andExpect(status().isOk())
-                .andExpect(model().attribute("bundles", null));
-    }
-
-    @Test(expected = NullPointerException.class)
-    public void givenBundleServiceReturnsNull_whenGetRootPath_thenReturnOkStatusAndThrowsException() throws Exception {
-        when(bundleService.listAll()).thenReturn(null);
-        mockMvc.perform(get("/bundle/"))
-                .andExpect(status().isOk())
-                .andExpect(model().attribute("bundles", null));
-    }
-
     @Test
-    public void whenGetNew_thenReturnOkStatusAndReturnBundleForm() throws Exception {
+    public void whenGetNewBundle_thenReturnBundleForm() throws Exception {
         mockMvc.perform(get("/bundle/new"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("bundle/bundleform"))
@@ -126,7 +110,7 @@ public class BundleControllerTest {
     }
 
     @Test
-    public void _whenGetShowGivenId_thenReturnOkStatusAndReturnGivenBundle() throws Exception {
+    public void whenShowBundle_thenFetchGivenBundleAndReturnViewWithIt() throws Exception {
         Bundle mockBundle = mock(Bundle.class);
         when(bundleService.getById(anyInt())).thenReturn(mockBundle);
 
@@ -139,18 +123,8 @@ public class BundleControllerTest {
         verifyNoMoreInteractions(bundleService);
     }
 
-    @Test(expected = NestedServletException.class)
-    public void givenBundleServiceReturnsNull_whenGetShowGivenId_thenReturnOkStatusAndThrowException() throws Exception {
-        when(bundleService.getById(anyInt())).thenReturn(null);
-
-        mockMvc.perform(get("/bundle/show/{id}", 1))
-                .andExpect(status().isOk())
-                .andExpect(view().name("bundle/show"))
-                .andExpect(model().attribute("bundle", null));
-    }
-
     @Test
-    public void whenGetEditGivenId_thenReturnOkStatusAndReturnBundleForm() throws Exception {
+    public void whenEditGivenId_thenRetrieveThatBundleAndReturnBundleForm() throws Exception {
         Bundle mockBundle = mock(Bundle.class);
         BundleToBundleForm bundleToBundleFormMock = mock(BundleToBundleForm.class);
 
@@ -178,21 +152,8 @@ public class BundleControllerTest {
         verifyNoMoreInteractions(bundleToBundleFormMock);
     }
 
-    @Test(expected = NullPointerException.class)
-    public void givenBundleServiceReturnsNull_whenGetEditGivenId_thenReturnOkStatusAndThrowException() throws Exception {
-        when(bundleService.getById(anyInt())).thenReturn(null);
-
-        mockMvc.perform(get("/bundle/edit/{id}", 1))
-                .andExpect(status().isOk())
-                .andExpect(view().name("bundle/bundleform"))
-                .andExpect(model().attribute("bundleForm", null));
-
-        verify(bundleService, times(1)).getById(anyInt());
-        verifyNoMoreInteractions(bundleService);
-    }
-
     @Test
-    public void givenValidBundleForm_whenPostToSaveOrUpdateBundle_thenBundleIsSavedIntoDbANdRedirectedToBundleShow() throws Exception {
+    public void givenValidBundleForm_whenSaveBundle_thenBundleIsSavedIntoDbAndRedirectToShowGivenBundle() throws Exception {
         Bundle bundleMock = mock(Bundle.class);
         bundleMock.setId(1);
         bundleMock.setDescription("description");
@@ -216,7 +177,7 @@ public class BundleControllerTest {
     }
 
     @Test
-    public void givenInvalidBundleForm_whenPostToSaveOrUpdateBundle_thenReturnOkStatusAndBundleFormView() throws Exception {
+    public void givenInvalidBundleForm_whenSaveBundle_thenReturnBundleFormAndTheBundleIsNotSavedIntoDb() throws Exception {
         mockMvc.perform(post("/bundle")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("bundleName", "")
@@ -225,10 +186,12 @@ public class BundleControllerTest {
                 .param("bundlePrice", "").with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("bundle/bundleform"));
+
+        verifyZeroInteractions(bundleService);
     }
 
     @Test
-    public void whenDeleteBundle_thenRemoveBundleWithGivenIdFromDbAndReturnFoundStatusAndRedirectToBundleList() throws Exception {
+    public void whenDeleteBundle_thenRemoveBundleWithGivenIdFromDbAndAndRedirectToBundleList() throws Exception {
         mockMvc.perform(get("/bundle/delete/{id}", 1))
                 .andExpect(status().isFound())
                 .andExpect(redirectedUrl("/bundle/list"));
