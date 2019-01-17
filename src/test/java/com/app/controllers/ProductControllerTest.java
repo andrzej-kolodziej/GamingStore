@@ -51,7 +51,7 @@ public class ProductControllerTest {
     private PublisherService publisherService;
 
     @Test
-    public void whenGetProductsList_thenReturnAllProductsAndOkStatus() throws Exception {
+    public void whenGetProductsList_thenReturnAllProducts() throws Exception {
         List products = new ArrayList<>();
         Product product = new Product();
         product.setName("name");
@@ -71,7 +71,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    public void whenGetProductRoot_thenReturnAllProductsAndOkStatus() throws Exception {
+    public void whenGetProductRoot_thenReturnAllProducts() throws Exception {
         List products = new ArrayList<>();
         Product product = new Product();
         product.setName("name");
@@ -91,7 +91,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    public void whenGetNewProduct_thenRetrieveAndListAllDevelopersAndPublishersAndReturnProductForm() throws Exception {
+    public void whenGetNewProduct_thenRetrieveAndListAllDevelopersAndPublishersFromDbAndReturnProductForm() throws Exception {
         Developer developer = new Developer();
         developer.setName("developer");
         Publisher publisher = new Publisher();
@@ -118,7 +118,7 @@ public class ProductControllerTest {
     }
 
     @Test
-    public void whenEditProduct_thenRetrieveProductAndListAllDevelopersAndPublishersAndReturnProductForm() throws Exception {
+    public void whenEditProduct_thenRetrieveProductAndListAllDevelopersAndPublishersAndReturnProductFormWithGivenProduct() throws Exception {
         Developer developer = new Developer();
         developer.setName("developer");
         Publisher publisher = new Publisher();
