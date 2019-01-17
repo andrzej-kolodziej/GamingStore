@@ -57,7 +57,7 @@ public class IndexControllerTest {
 
     @Test
     @WithMockUser(value = "admin", username = "admin", roles = {"ADMIN"})
-    public void givenBundleAndPrincipal_whenGetIndexRoot_thenReturndBundleProductViewAndSetupUserEmailAndReturnOkStatus() throws Exception {
+    public void givenBundleAndPrincipal_whenGetIndexRoot_thenReturndBundleProductViewAndSetupUserEmail() throws Exception {
         int bundleId = 1;
         Bundle bundle = new Bundle();
         bundle.setId(bundleId);
@@ -86,7 +86,8 @@ public class IndexControllerTest {
                 .andExpect(view().name("index"))
                 .andExpect(model().attribute("bundle", bundle))
                 .andExpect(model().attribute("products", bundle.getProducts()))
-                .andExpect(model().attribute("userEmail", "useremail"));
+                .andExpect(model().attribute("userEmail", "useremail"))
+                .andExpect(model().attribute("page", "index"));
 
         verify(bundleService, times(1)).getById(1);
         verify(userService, times(1)).findByUserName("admin");
@@ -95,7 +96,7 @@ public class IndexControllerTest {
 
     @Test
     @WithMockUser(value = "admin", username = "admin", roles = {"ADMIN"})
-    public void givenValidBundleIdAndTotalBundleNumberIsGreaterThanZeroAndPricipal_whenGetIndexOfBundleId_thenReturnIndexViewWithGivenBundleAndSetupUserEmailAndOkStatus() throws Exception {
+    public void givenValidBundleIdAndTotalBundleNumberIsGreaterThanZeroAndPricipalIsDefined_whenGetIndexOfBundleId_thenReturnIndexViewWithGivenBundleAndSetupUserEmail() throws Exception {
         int bundleId = 1;
         Bundle bundle = new Bundle();
         bundle.setId(bundleId);
@@ -125,7 +126,8 @@ public class IndexControllerTest {
                 .andExpect(view().name("index"))
                 .andExpect(model().attribute("bundle", bundle))
                 .andExpect(model().attribute("products", bundle.getProducts()))
-                .andExpect(model().attribute("userEmail", "useremail"));
+                .andExpect(model().attribute("userEmail", "useremail"))
+                .andExpect(model().attribute("page", "index"));
 
         verify(bundleService, times(1)).getById(bundleId);
         verify(userService, times(1)).findByUserName("admin");
@@ -150,7 +152,7 @@ public class IndexControllerTest {
 
     @Test
     @WithMockUser(value = "admin", username = "admin", roles = {"ADMIN"})
-    public void givenValidBundleIdAndTotalBundleNumberIsGreaterThanZeroAndPricipalAndSessioUserEmailIsNull_whenGetIndexOfBundleId_thenReturnIndexViewWithGivenBundleAndSetupUserEmailAndOkStatus() throws Exception {
+    public void givenValidBundleIdAndTotalBundleNumberIsGreaterThanZeroAndPricipalIsDefinedAndSessionUserEmailIsNull_whenGetIndexOfBundleId_thenReturnIndexViewWithGivenBundleAndSetupUserEmailAndOkStatus() throws Exception {
         int bundleId = 1;
         Bundle bundle = new Bundle();
         bundle.setId(bundleId);
@@ -179,7 +181,8 @@ public class IndexControllerTest {
                 .andExpect(view().name("index"))
                 .andExpect(model().attribute("bundle", bundle))
                 .andExpect(model().attribute("products", bundle.getProducts()))
-                .andExpect(model().attribute("userEmail", "useremail"));
+                .andExpect(model().attribute("userEmail", "useremail"))
+                .andExpect(model().attribute("page", "index"));
 
         verify(bundleService, times(1)).getById(bundleId);
         verify(userService, times(1)).findByUserName("admin");
