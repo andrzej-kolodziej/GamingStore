@@ -43,7 +43,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(SpringRunner.class)
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-
         classes = {/*SpringSecurityTestConfig.class,*/ /*SpringSecurityConfig.class*/})
 @TestPropertySource(
         locations = "classpath:application.properties")
