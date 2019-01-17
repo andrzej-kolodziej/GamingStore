@@ -26,6 +26,7 @@ import sun.security.acl.PrincipalImpl;
 
 import java.security.Principal;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -53,37 +54,43 @@ public class CustomerControllerTest {
 
     @Test
     @WithMockUser(username = "admin", value = "admin", roles = {"ADMIN"})
-    public void whenGetOrderHistory_thenReturnOkStatusAndOrderHistoryView() throws Exception {
-        User mockUser = mock(User.class);
-        mockUser.setUserName("username");
-        when(userService.findByUserName(anyString())).thenReturn(mockUser);
+    public void givenPrincipal_whenGetOrderHistory_thenFetchUserFromDbAndReturnHistoryOfThatUser() throws Exception {
+        User user = new User();
+        user.setUserName("username");
+        when(userService.findByUserName(anyString())).thenReturn(user);
 
         mockMvc.perform(get("/customer/orderhistory"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("customer/orderhistory"))
-                .andExpect(model().attribute("user", mockUser));
+                .andExpect(model().attribute("user", user));
 
-        verify(userService).findByUserName(eq("admin"));
+        verify(userService).findByUserName(anyString());
         verifyNoMoreInteractions(userService);
     }
 
     @Test
-    public void givenNoPrincipal_whenGetOrderHistory_thenReturnFoundStatusAndAccessDeniedView() throws Exception {
+    public void givenNoPrincipal_whenGetOrderHistory_thenAccessDeniedViewAndNoUserIsFetchedFromDb() throws Exception {
         mockMvc.perform(get("/customer/orderhistory"))
                 .andExpect(status().isFound())
                 .andExpect(view().name("access_denied"));
+
+        verifyZeroInteractions(userService);
     }
 
     @Test
-    public void whenGetCreateUser_thenReturnOkStatusAndCustomerFormView() throws Exception {
+    public void whenGetNewUser_thenReturnCustomerForm() throws Exception {
         mockMvc.perform(get("/customer/new"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("customer/customerform"));
     }
 
     @Test
-    public void givenValidCustomerForm_whenPostNewCustomer_thenReturnFoundStatusAndCreateNewCustomerToDbAndRedirectToLoginPage() throws Exception {
-        when(roleService.getById(anyInt())).thenReturn(mock(Role.class));
+    public void givenValidCustomerForm_whenSaveNewCustomer_thenSaveNewCustomerToDbAndRedirectToLoginPage() throws Exception {
+        Role role = new Role();
+        role.setRole("ROLE_ADMIN");
+        role.setId(1);
+
+        when(roleService.getById(anyInt())).thenReturn(role);
 
         mockMvc.perform(post("/customer/post")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -94,13 +101,16 @@ public class CustomerControllerTest {
                 .andExpect(redirectedUrl("/login"));
 
         ArgumentCaptor<UserForm> formObjectArgument = ArgumentCaptor.forClass(UserForm.class);
+        verify(roleService, times(1)).getById(anyInt());
         verify(userService, times(1)).saveOrUpdateUserForm(formObjectArgument.capture());
+        UserForm userForm = formObjectArgument.getValue();
+        assertThat(userForm.getRoles().get(0)).isEqualTo(role);
         verifyNoMoreInteractions(userService);
+        verifyZeroInteractions(roleService);
     }
 
-
     @Test
-    public void givenInvalidUserForm_whenPostNewCustomer_thenReturnCustomerFormView() throws Exception {
+    public void givenInvalidUserForm_whenSaveNewCustomer_thenReturnCustomerFormViewAndNoCustomerIsSavedIntoDb() throws Exception {
         mockMvc.perform(post("/customer/post")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("userName", "")
@@ -108,11 +118,13 @@ public class CustomerControllerTest {
                 .param("userPassword", "").with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("customer/customerform"));
+
+        verifyZeroInteractions(userService);
     }
 
     @Test
     @WithMockUser(username = "admin", value = "admin", roles = {"ADMIN"})
-    public void givenPrincipal_whenGetCustomerSetting_thenReturnUserForm() throws Exception {
+    public void givenPrincipal_whenGetCustomerSetting_thenFetchThatCustomerAndReturnUserForm() throws Exception {
         User mockUser = mock(User.class);
         mockUser.setUserName("admin");
         mockUser.setId(1);
