@@ -58,7 +58,7 @@ public class DeveloperControllerTest {
     private DeveloperForm developerForm;
 
     @Test
-    public void whenGetDevelopersList_thenReturnOkStatusAndDeveloperList() throws Exception {
+    public void whenGetDevelopersList_thenFetchAllDevelopersAndReturnDeveloperList() throws Exception {
         List developers = new ArrayList<>();
         Developer developer = new Developer();
         developer.setName("developer");
@@ -78,7 +78,7 @@ public class DeveloperControllerTest {
     }
 
     @Test
-    public void whenGetDevelopersRootPath_thenReturnOkStatusAndDeveloperList() throws Exception {
+    public void whenGetDevelopersRootPath_thenFetchAllDevelopersAndReturnDeveloperList() throws Exception {
         List developers = new ArrayList<>();
         Developer developer = new Developer();
         developer.setName("developer");
@@ -98,7 +98,7 @@ public class DeveloperControllerTest {
     }
 
     @Test
-    public void whenGetShowDeveloperWithGivenId_thenReturnOkStatusAndViewWithGivenDeveloper() throws Exception {
+    public void whenShowDeveloperWithGivenId_thenGetThatDeveloperFromDbAndReturnViewWithGivenDeveloper() throws Exception {
         Developer developer = new Developer();
         developer.setId(1);
         developer.setName("developer");
@@ -117,7 +117,7 @@ public class DeveloperControllerTest {
     }
 
     @Test
-    public void whenGetNewDeveloper_thenReturnOkStatusAndDeveloperFormView() throws Exception {
+    public void whenGetNewDeveloper_thenReturnDeveloperFormView() throws Exception {
         mockMvc.perform(get("/developer/new"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("developer/developerform"))
@@ -125,32 +125,57 @@ public class DeveloperControllerTest {
     }
 
     @Test
-    public void whenAddDeveloperProduct_thenReturnOkStatusAndAddDeveloperProductForm() throws Exception {
+    public void whenAddDeveloperProduct_thenAddNewProductToDeveloperAndReturnDeveloperForm() throws Exception {
+        DeveloperForm developerForm = new DeveloperForm();
+        developerForm.setDeveloperId(1);
+        developerForm.setDeveloperName("name");
+        developerForm.setDeveloperImageUrl("url");
+        developerForm.setDeveloperDescription("description");
+        developerForm.setDeveloperProducts(new ArrayList<>());
+
         mockMvc.perform(get("/developer?addProduct")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("developerName", "name")
+                /*.param("developerName", "name")
                 .param("developerImageUrl", "url")
                 .param("developerId", "1")
-                .param("developerDescription", "description"))
+                .param("developerDescription", "description"))*/
+                .flashAttr("developerForm", developerForm))
                 .andExpect(status().isOk())
                 .andExpect(view().name("developer/developerform"));
+
+        List<Product> products =  developerForm.getDeveloperProducts();
+        assertThat(products.get(products.size()-1)).isNotNull();
+        assertThat(products.get(products.size()-1)).isOfAnyClassIn(Product.class);
     }
 
     @Test
-    public void whenRemoveDeveloperProduct_thenReturnOkStatusAndDeveloperForm() throws Exception {
+    public void whenRemoveDeveloperProduct_thenRemoveThatProductFromDeveloperAndReturnDeveloperForm() throws Exception {
+        DeveloperForm developerForm = new DeveloperForm();
+        developerForm.setDeveloperId(1);
+        developerForm.setDeveloperName("name");
+        developerForm.setDeveloperImageUrl("url");
+        developerForm.setDeveloperDescription("description");
+        developerForm.setDeveloperProducts(new ArrayList<>());
+        developerForm.getDeveloperProducts().add(new Product());
+        developerForm.getDeveloperProducts().add(new Product());
+
         mockMvc.perform(get("/developer?removeProduct")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("developerName", "name")
+                //.contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                /*.param("developerName", "name")
                 .param("developerImageUrl", "url")
                 .param("developerId", "1")
                 .param("developerDescription", "description")
-                .requestAttr("removeProduct", "1"))
+                .requestAttr("removeProduct", "1"))*/
+                .requestAttr("removeProduct", 1)
+                .flashAttr("developerForm", developerForm).with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("developer/developerform"));
+
+        assertThat(developerForm.getDeveloperProducts().get(1)).isNull();
     }
 
     @Test
-    public void givenValidDeveloperForm_whenSaveDeveloper_thenReturnFoundStatusAndSaveDeveloperIntoDbAndRedirectToShowDeveloperPage() throws Exception {
+    public void givenValidDeveloperForm_whenSaveDeveloper_thenSaveDeveloperIntoDbAndRedirectToShowDeveloperPage() throws Exception {
         Developer developer = new Developer();
         developer.setName("name");
         developer.setDescription("description");
@@ -172,7 +197,7 @@ public class DeveloperControllerTest {
     }
 
     @Test
-    public void givenInvalidDeveloperForm_whenSaveDeveloper_thenReturnOkStatusAndSaveDeveloperIntoDbAndRedirectToShowDeveloperPage() throws Exception {
+    public void givenInvalidDeveloperForm_whenSaveDeveloper_thenDoNotSaveDeveloperIntoDbAndReturnDeveloperForm() throws Exception {
         mockMvc.perform(post("/developer")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("developerName", "")
@@ -181,10 +206,12 @@ public class DeveloperControllerTest {
                 .param("developerDescription", "").with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("developer/developerform"));
+
+        verifyZeroInteractions(developerService);
     }
 
     @Test
-    public void whenEditDeveloper_thenReturnOkStatusAndDeveloperFormView() throws Exception {
+    public void whenEditDeveloper_thenFetchThatDeveloperFromDbAndReturnDeveloperFormView() throws Exception {
         DeveloperForm developerForm = new DeveloperForm();
         developerForm.setDeveloperName("name");
         developerForm.setDeveloperDescription("description");
@@ -194,14 +221,15 @@ public class DeveloperControllerTest {
 
         mockMvc.perform(get("/developer/edit/{id}", 1))
                 .andExpect(status().isOk())
-                .andExpect(view().name("developer/developerform"));
+                .andExpect(view().name("developer/developerform"))
+                .andExpect(model().attribute("developerForm", developerForm));
 
         verify(developerService,  times(1)).getDeveloperFormById(anyInt());
         verifyNoMoreInteractions(developerService);
     }
 
     @Test
-    public void whenDeleteDeveloper_thenRemoveDeveloperFromDbAndReturnFoundStatusAndRedirectToDeveloperList() throws Exception {
+    public void whenDeleteDeveloper_thenRemoveDeveloperFromDbAndRedirectToDeveloperList() throws Exception {
         mockMvc.perform(get("/developer/delete/{id}", 1))
                 .andExpect(status().isFound())
                 .andExpect(redirectedUrl("/developer/list"));
