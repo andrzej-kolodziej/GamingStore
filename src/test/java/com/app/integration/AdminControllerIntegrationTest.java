@@ -73,4 +73,11 @@ public class AdminControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(redirectedUrl("http://localhost/store"));
     }
+
+    @Test
+    public void givenNotAuthenticated_whenGetAdmin_thenReturnFoundStatusAndRedirectToLoginPage() throws Exception {
+        mockMvc.perform(get("/admin"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("http://localhost/login"));
+    }
 }
