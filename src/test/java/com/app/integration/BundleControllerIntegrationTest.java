@@ -132,9 +132,69 @@ public class BundleControllerIntegrationTest {
     }
 
     @Test
-    public void givenNotAuthenticated_whenGetList_thenReturnForbiddenStatusAndAccessDeniedView() throws Exception {
+    public void givenNotAuthenticated_whenGetList_thenReturnFoundStatusAndRedirectToLoginPage() throws Exception {
         mockMvc.perform(get("/bundle/list"))
-                .andExpect(status().isForbidden())
-                .andExpect(view().name("access_denied"));
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("http://localhost/login"));
+    }
+
+    @Test
+    public void givenNotAuthenticated_whenGetRootPath_thenReturnFoundStatusAndRedirectToLoginPage() throws Exception {
+        mockMvc.perform(get("/bundle/"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("http://localhost/login"));
+    }
+
+    @Test
+    public void givenNotAuthenticated_whenGetNewList_thenReturnFoundStatusAndRedirectToLoginPage() throws Exception {
+        mockMvc.perform(get("/bundle/new"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("http://localhost/login"));
+    }
+
+    @Test
+    public void givenNotAuthenticated_whenShowBundle_thenReturnFoundStatusAndRedirectToLoginPage() throws Exception {
+        mockMvc.perform(get("/bundle/show/{id}", 1))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("http://localhost/login"));
+    }
+
+    @Test
+    public void givenNotAuthenticated_whenEditBundle_thenReturnFoundStatusAndRedirectToLoginPage() throws Exception {
+        mockMvc.perform(get("/bundle/edit/{id}", 1))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("http://localhost/login"));
+    }
+
+    @Test
+    public void givenNotAuthenticated_whenSaveBundle_thenReturnFoundStatusAndRedirectToLoginPage() throws Exception {
+        mockMvc.perform(post("/bundle/")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("bundleName", "name")
+                .param("bundleDescription", "description")
+                .param("bundleImageUrl", "url")
+                .param("bundlePrice", "10").with(csrf()))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("http://localhost/login"));
+    }
+
+    @Test
+    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
+    public void givenAuthUserAndNoCsrfToken_whenSaveBundle_thenReturnFoundStatusAndRedirectToLoginPage() throws Exception {
+        mockMvc.perform(post("/bundle/")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("bundleName", "name")
+                .param("bundleDescription", "description")
+                .param("bundleImageUrl", "url")
+                .param("bundlePrice", "10"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("http://localhost/login"));
+    }
+
+    @Test
+    public void givenNotAuthenticated_whenDeleteBundle_thenReturnFoundStatusAndRedirectToLoginPage() throws Exception {
+        mockMvc.perform(get("/bundle/delete/{id}", 1))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("http://localhost/login"));
     }
 }
