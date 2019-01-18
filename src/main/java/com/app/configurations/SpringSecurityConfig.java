@@ -76,6 +76,7 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
         if (!securityEnabled)
             return;
         http.authorizeRequests().antMatchers("/").permitAll()
+                .antMatchers("/h2-console/**").permitAll()
                 .antMatchers("/store").permitAll()
                 .antMatchers("/index").permitAll()
                 .antMatchers("/workinprogress").permitAll()
@@ -106,5 +107,7 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
                 /*.and()
                 .rememberMe()
                 .tokenValiditySeconds(2678400);*/
+        //http.csrf().disable();
+        //http.headers().frameOptions().disable();
     }
 }
