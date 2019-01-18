@@ -76,6 +76,7 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
         if (!securityEnabled)
             return;
         http.authorizeRequests().antMatchers("/").permitAll()
+                .antMatchers("/h2-console/**").permitAll()
                 .antMatchers("/store").permitAll()
                 .antMatchers("/index").permitAll()
                 .antMatchers("/workinprogress").permitAll()
@@ -85,15 +86,15 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/cart").permitAll()
                 .antMatchers("/generatedummydata").permitAll()
                 .antMatchers("/customer/post").authenticated()
-                .antMatchers("/customer/orderhistory").hasAnyRole("ADMIN", "USER")
+                .antMatchers("/customer/orderhistory").authenticated()
                 .antMatchers("/customer/**").permitAll()
-                .antMatchers("/admin").hasRole("ADMIN")
+                .antMatchers("/admin").hasAuthority("ADMIN")
                 .antMatchers("/framents/**").permitAll()
-                .antMatchers("/bundle/**").hasRole("ADMIN")
-                .antMatchers("/developer/**").hasRole("ADMIN")
-                .antMatchers("/product/**").hasRole("ADMIN")
-                .antMatchers("/publisher/**").hasRole("ADMIN")
-                .antMatchers("/user/**").hasRole("ADMIN")
+                .antMatchers("/bundle/**").authenticated()
+                .antMatchers("/developer/**").authenticated()
+                .antMatchers("/product/**").authenticated()
+                .antMatchers("/publisher/**").authenticated()
+                .antMatchers("/user/**").authenticated()
                 .and()
                 .formLogin().loginPage("/login").permitAll()
                 .and()
@@ -106,5 +107,7 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
                 /*.and()
                 .rememberMe()
                 .tokenValiditySeconds(2678400);*/
+        //http.csrf().disable();
+        //http.headers().frameOptions().disable();
     }
 }
