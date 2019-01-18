@@ -2,7 +2,6 @@ package com.app.services;
 
 import com.app.domain.Publisher;
 import com.app.repositories.PublisherRepository;
-import com.app.services.reposervices.PublisherServiceReopImpl;
 import com.app.services.reposervices.PublisherServiceRepoImpl;
 import org.junit.Before;
 import org.junit.Test;
