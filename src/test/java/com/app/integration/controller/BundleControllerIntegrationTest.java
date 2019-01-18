@@ -1,4 +1,4 @@
-package com.app.integration;
+package com.app.integration.controller;
 
 import com.app.commands.BundleForm;
 import com.app.configuration.SpringSecurityTestConfig;

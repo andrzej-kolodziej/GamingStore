@@ -1,19 +1,15 @@
-package com.app.repository;
+package com.app.integration.repository;
 
 import com.app.domain.Publisher;
-import com.app.domain.Developer;
 import com.app.domain.Product;
-import com.app.domain.Publisher;
 import com.app.repositories.PublisherRepository;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.util.*;
 

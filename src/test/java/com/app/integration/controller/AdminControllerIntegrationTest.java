@@ -1,4 +1,4 @@
-package com.app.integration;
+package com.app.integration.controller;
 
 import com.app.configuration.SpringSecurityTestConfig;
 import org.junit.Test;

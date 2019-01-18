@@ -1,9 +1,7 @@
-package com.app.repository;
+package com.app.integration.repository;
 
 import com.app.domain.Developer;
-import com.app.domain.Developer;
 import com.app.domain.Product;
-import com.app.domain.Publisher;
 import com.app.repositories.DeveloperRepository;
 import org.junit.Test;
 import org.junit.runner.RunWith;

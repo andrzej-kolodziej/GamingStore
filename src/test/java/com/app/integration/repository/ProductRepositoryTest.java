@@ -1,4 +1,4 @@
-package com.app.repository;
+package com.app.integration.repository;
 
 import com.app.domain.*;
 import com.app.domain.Product;
