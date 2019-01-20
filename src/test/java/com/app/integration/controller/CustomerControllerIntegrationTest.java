@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         classes = {SpringSecurityTestConfig.class}/*, SpringSecurityConfig.class}*/)
 @TestPropertySource(
-        locations = "classpath:application.properties")
+        locations = "classpath:test.application.properties")
 @AutoConfigureMockMvc(secure = true)
 public class CustomerControllerIntegrationTest {
 
