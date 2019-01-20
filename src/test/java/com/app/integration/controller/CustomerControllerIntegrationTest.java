@@ -17,6 +17,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
@@ -41,8 +42,8 @@ public class CustomerControllerIntegrationTest {
     private MockMvc mockMvc;
 
     @Test
-    @WithMockUser(username = "admin", value = "admin", roles = {"ADMIN"})
-    public void givenPrincipal_whenGetOrderHistory_thenFetchUserFromDbAndReturnHistoryOfThatUser() throws Exception {
+    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
+    public void givenAuthUser_whenGetOrderHistory_thenFetchUserFromDbAndReturnHistoryOfThatUser() throws Exception {
         mockMvc.perform(get("/customer/orderhistory"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("customer/orderhistory"))
@@ -65,7 +66,8 @@ public class CustomerControllerIntegrationTest {
     }
 
     @Test
-    public void givenValidCustomerForm_whenSaveNewCustomer_thenSaveNewCustomerToDbAndRedirectToLoginPage() throws Exception {
+    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
+    public void givenAuthUserAndValidCustomerForm_whenSaveNewCustomer_thenSaveNewCustomerToDbAndRedirectToLoginPage() throws Exception {
         mockMvc.perform(post("/customer/post")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("userName", "username")
@@ -78,7 +80,8 @@ public class CustomerControllerIntegrationTest {
     }
 
     @Test
-    public void givenInvalidUserForm_whenSaveNewCustomer_thenReturnCustomerFormViewAndNoCustomerIsSavedIntoDb() throws Exception {
+    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
+    public void givenAuthUserInvalidUserForm_whenSaveNewCustomer_thenReturnCustomerFormViewAndNoCustomerIsSavedIntoDb() throws Exception {
         mockMvc.perform(post("/customer/post")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("userName", "")
@@ -90,7 +93,20 @@ public class CustomerControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", value = "admin", roles = {"ADMIN"})
+    public void givenNotAuthenticated_whenSaveNewCustomer_thenRedirectToLoginPage() throws Exception {
+        mockMvc.perform(post("/customer/post")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("userName", "username")
+                .param("userEmail", "email")
+                .param("userPassword", "passwd").with(csrf()))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("http://localhost/login"));
+
+        ArgumentCaptor<UserForm> formObjectArgument = ArgumentCaptor.forClass(UserForm.class);
+    }
+
+    @Test
+    @WithUserDetails(value = "admin", userDetailsServiceBeanName = "userDetailsService")
     public void givenPrincipal_whenGetCustomerSetting_thenFetchThatCustomerAndReturnUserForm() throws Exception {
         mockMvc.perform(get("/customer/setting"))
                 .andExpect(status().isOk())
