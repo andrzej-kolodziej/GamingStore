@@ -52,11 +52,11 @@ public class IndexController {
     @RequestMapping("index/{id}")
     public String showBundle(@PathVariable Integer id, Model model, Principal principal, HttpSession session){
         long bundleCount = bundleService.count();
-        if (id > bundleCount) {
-            return "access_denied";
-        }
         if (bundleCount == 0) {
             return "index";
+        }
+        if (id > bundleCount) {
+            return "access_denied";
         } else {
             Bundle bundle = bundleService.getById(id);
             model.addAttribute("bundle",bundle);
@@ -68,7 +68,7 @@ public class IndexController {
         return "index";
     }
 
-    private Model setupUserEmail(Model model, Principal principal, HttpSession session){
+    Model setupUserEmail(Model model, Principal principal, HttpSession session){
         if (principal != null){
             if (session.getAttribute("userEmail") == null){
                 User user = userService.findByUserName(principal.getName());

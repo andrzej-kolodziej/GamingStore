@@ -10,6 +10,9 @@ import com.app.services.UserService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -23,14 +26,18 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.ui.Model;
 import org.springframework.web.context.WebApplicationContext;
 
+import javax.servlet.http.HttpSession;
 import java.math.BigDecimal;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
@@ -38,25 +45,32 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        classes = {/*SpringSecurityTestConfig.class,*/ /*SpringSecurityConfig.class*/})
-@TestPropertySource(
-        locations = "classpath:application.properties")
-@AutoConfigureMockMvc(secure = true)
 public class IndexControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @InjectMocks
+    private IndexController indexController;
 
-    @MockBean
+    @Mock
     private BundleService bundleService;
 
-    @MockBean
+    @Mock
     private UserService userService;
 
+    @Mock
+    private Model model;
+
+    @Mock
+    private Principal principal;
+
+    @Mock
+    private HttpSession session;
+
+    @Before
+    public void init() {
+        MockitoAnnotations.initMocks(this);
+    }
+
     @Test
-    @WithMockUser(value = "admin", username = "admin", roles = {"ADMIN"})
     public void givenBundleAndPrincipal_whenGetIndexRoot_thenReturndBundleProductViewAndSetupUserEmail() throws Exception {
         int bundleId = 1;
         Bundle bundle = new Bundle();
@@ -75,28 +89,27 @@ public class IndexControllerTest {
         bundle.setProducts(products);
 
         when(bundleService.getById(bundleId)).thenReturn(bundle);
+        when(principal.getName()).thenReturn("user");
 
         User user = new User();
         user.setEmail("useremail");
         when(userService.findByUserName(anyString())).thenReturn(user);
+        String expectedView = "index";
 
-        mockMvc.perform(get("/")
-                .sessionAttr("userEmail", "useremail"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("index"))
-                .andExpect(model().attribute("bundle", bundle))
-                .andExpect(model().attribute("products", bundle.getProducts()))
-                .andExpect(model().attribute("userEmail", "useremail"))
-                .andExpect(model().attribute("page", "index"));
+        String actualView = indexController.home(model, principal, session);
 
+        assertThat(actualView).isEqualTo(expectedView);
+        verify(model, times(1)).addAttribute("bundle", bundle);
+        verify(model, times(1)).addAttribute("products", bundle.getProducts());
+        verify(indexController, times(1)).setupUserEmail(model, principal, session);
         verify(bundleService, times(1)).getById(1);
         verify(userService, times(1)).findByUserName("admin");
         verifyNoMoreInteractions(userService);
+        verifyNoMoreInteractions(model);
     }
 
     @Test
-    @WithMockUser(value = "admin", username = "admin", roles = {"ADMIN"})
-    public void givenValidBundleIdAndTotalBundleNumberIsGreaterThanZeroAndPricipalIsDefined_whenGetIndexOfBundleId_thenReturnIndexViewWithGivenBundleAndSetupUserEmail() throws Exception {
+    public void givenTotalBundleCountIsGreaterThanZeroAndBundleIdIsValid_whenShowBundle_thenReturnIndexViewWithGivenBundleAndSetupUserEmail() throws Exception {
         int bundleId = 1;
         Bundle bundle = new Bundle();
         bundle.setId(bundleId);
@@ -115,77 +128,96 @@ public class IndexControllerTest {
 
         when(bundleService.count()).thenReturn(10L);
         when(bundleService.getById(bundleId)).thenReturn(bundle);
+        when(principal.getName()).thenReturn("user");
 
         User user = new User();
         user.setEmail("useremail");
         when(userService.findByUserName(anyString())).thenReturn(user);
+        String expectedView = "index";
 
-        mockMvc.perform(get("/index/{id}", bundleId)
-                .sessionAttr("userEmail", "useremail"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("index"))
-                .andExpect(model().attribute("bundle", bundle))
-                .andExpect(model().attribute("products", bundle.getProducts()))
-                .andExpect(model().attribute("userEmail", "useremail"))
-                .andExpect(model().attribute("page", "index"));
+        String actualView = indexController.showBundle(1, model, principal, session);
 
+        assertThat(actualView).isEqualTo(expectedView);
+        verify(model, times(1)).addAttribute("bundle", bundle);
+        verify(model, times(1)).addAttribute("products", bundle.getProducts());
+        verify(indexController, times(1)).setupUserEmail(model, principal, session);
         verify(bundleService, times(1)).getById(bundleId);
         verify(userService, times(1)).findByUserName("admin");
         verifyNoMoreInteractions(userService);
     }
 
     @Test
-    public void givenInvalidBundleId_whenGetIndexOfBundleId_thenReturnOkStatusAndAccessDeniedView() throws Exception {
+    public void givenInvalidBundleId_whenGetIndexOfBundleId_thenAccessDeniedView() throws Exception {
         when(bundleService.count()).thenReturn(10L);
-        mockMvc.perform(get("/index/{id}", 20))
-                .andExpect(status().isOk())
-                .andExpect(view().name("access_denied"));
+        String expectedView = "access_denied";
+
+        String actualView = indexController.showBundle(15, model, principal, session);
+
+        assertThat(actualView).isEqualTo(expectedView);
     }
 
     @Test
-    public void givenBundleCountIsZero_whenGetIndexOfBundleId_thenReturnIndexPageAndOkStatus() throws Exception {
+    public void givenBundleCountIsZero_whenShowBundle_thenIndexPageAndDoNotSetupUserEmail() throws Exception {
         when(bundleService.count()).thenReturn(0L);
-        mockMvc.perform(get("/index/{id}", 0))
-                .andExpect(status().isOk())
-                .andExpect(view().name("index"));
+        String expectedView = "access_denied";
+
+        String actualView = indexController.showBundle(15, model, principal, session);
+
+        assertThat(actualView).isEqualTo(expectedView);
+        verifyZeroInteractions(indexController);
     }
 
     @Test
-    @WithMockUser(value = "admin", username = "admin", roles = {"ADMIN"})
-    public void givenValidBundleIdAndTotalBundleNumberIsGreaterThanZeroAndPricipalIsDefinedAndSessionUserEmailIsNull_whenGetIndexOfBundleId_thenReturnIndexViewWithGivenBundleAndSetupUserEmailAndOkStatus() throws Exception {
-        int bundleId = 1;
-        Bundle bundle = new Bundle();
-        bundle.setId(bundleId);
-        bundle.setPrice(BigDecimal.valueOf(10));
-        bundle.setImageUrl("url");
-        bundle.setName("name");
-        bundle.setDescription("description");
-
-        Set<Product> products = new HashSet<>();
-        Product product = new Product();
-        product.setPrice(BigDecimal.valueOf(20));
-        product.setDescription("product description");
-        product.setName("product name");
-        products.add(product);
-        bundle.setProducts(products);
-
-        when(bundleService.count()).thenReturn(10L);
-        when(bundleService.getById(bundleId)).thenReturn(bundle);
-
+    public void givenPrincipalAndSessionUserEmailIsDefinedAndSessionUserEmailIsEqualToUserEmail_whenSetupUserEmail_thenFetchUserAndInsertUserEmailIntoModel() {
         User user = new User();
         user.setEmail("useremail");
-        when(userService.findByUserName(anyString())).thenReturn(user);
+        when(userService.findByUserName("user")).thenReturn(user);
+        when(session.getAttribute("userEmail")).thenReturn("useremail");
+        when(principal.getName()).thenReturn("user");
 
-        mockMvc.perform(get("/index/{id}", bundleId))
-                .andExpect(status().isOk())
-                .andExpect(view().name("index"))
-                .andExpect(model().attribute("bundle", bundle))
-                .andExpect(model().attribute("products", bundle.getProducts()))
-                .andExpect(model().attribute("userEmail", "useremail"))
-                .andExpect(model().attribute("page", "index"));
+        indexController.setupUserEmail(model, principal, session);
 
-        verify(bundleService, times(1)).getById(bundleId);
-        verify(userService, times(1)).findByUserName("admin");
+        verify(model, times(1)).addAttribute("userEmail", "useremail");
+        verify(userService, times(1)).findByUserName("user");
+        verifyNoMoreInteractions(model);
         verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    public void givenPrincipalAndSessionUserEmailIsDefinedAndSessionUserEmailIsNotEqualToUserEmail_whenSetupUserEmail_thenFetchUserAndInsertUserEmailIntoModel() {
+        User user = new User();
+        user.setEmail("useremail1");
+        when(userService.findByUserName("user")).thenReturn(user);
+        when(session.getAttribute("userEmail")).thenReturn("useremail2");
+        when(principal.getName()).thenReturn("user");
+
+        indexController.setupUserEmail(model, principal, session);
+
+        verify(model, times(1)).addAttribute("userEmail", "useremail");
+        verify(userService, times(1)).findByUserName("user");
+        verifyZeroInteractions(model);
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    public void givenPrincipalAndSessionUserEmailIsNull_whenSetupUserEmail_thenFetchUserAndInsertUserEmailIntoModel() {
+        User user = new User();
+        user.setEmail("useremail");
+        when(userService.findByUserName("user")).thenReturn(user);
+        when(principal.getName()).thenReturn("user");
+
+        indexController.setupUserEmail(model, principal, session);
+
+        verify(model, times(1)).addAttribute("userEmail", "useremail");
+        verify(userService, times(1)).findByUserName("user");
+        verifyNoMoreInteractions(model);
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    public void givenNoPricipal_whenSetupUSerEmail_thenDoNothing() {
+        indexController.setupUserEmail(model, null, session);
+
+        verifyZeroInteractions(model);
     }
 }
