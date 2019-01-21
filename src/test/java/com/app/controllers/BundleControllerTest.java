@@ -9,9 +9,12 @@ import com.app.domain.Bundle;
 import com.app.services.BundleService;
 import com.app.services.ProductService;
 import com.app.services.sortList.ListSortingService;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -23,6 +26,8 @@ import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.util.NestedServletException;
 import org.thymeleaf.exceptions.TemplateProcessingException;
 
@@ -41,159 +46,171 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        classes = {/*SpringSecurityTestConfig.class,*/ /*SpringSecurityConfig.class*/})
-@TestPropertySource(
-        locations = "classpath:application.properties")
-@AutoConfigureMockMvc(secure = false)
 public class BundleControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @InjectMocks
+    private BundleController bundleController;
 
-    @MockBean
+    @Mock
     private BundleService bundleService;
 
-    @MockBean
+    @Mock
     private ProductService productService;
 
-    @MockBean
+    @Mock
     private ListSortingService listSortingService;
 
-    @MockBean
+    @Mock
     private BundleFormToBundle bundleFormToBundle;
 
-    @MockBean
+    @Mock
     private BundleToBundleForm bundleToBundleForm;
 
+    @Mock
+    private Model model;
+
+    @Mock
+    private BindingResult bindingResult;
+
+    @Before
+    public void init() {
+        MockitoAnnotations.initMocks(this);
+    }
 
     @Test
-    public void whenGetList_thenRetrieveAllBundlesFromDbAndReturnListOfThatBundles() throws Exception {
+    public void whenListAll_thenRetrieveAllBundlesFromDbAndReturnListOfThatBundles() throws Exception {
         List mockBundles = new ArrayList<>();
         Bundle bundle = new Bundle();
         bundle.setId(1);
         mockBundles.add(bundle);
         when(bundleService.listAll()).thenReturn(mockBundles);
-        mockMvc.perform(get("/bundle/list"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("bundle/list"))
-                .andExpect(model().attribute("bundles", mockBundles));
+        String expectedView = "bundle/list";
 
+        String actualView = bundleController.listAll(model);
+
+        assertThat(actualView).isEqualTo(expectedView);
+        verify(model, times(1)).addAttribute("bundles", mockBundles);
         verify(bundleService, times(1)).listAll();
         verifyNoMoreInteractions(bundleService);
+        verifyNoMoreInteractions(model);
     }
 
     @Test
-    public void whenGetRootPath_thenRetrieveAllBundlesFromDbAndReturnListOfThatBundles() throws Exception {
-        List mockBundles = new ArrayList<>();
-        Bundle bundle = new Bundle();
-        bundle.setId(1);
-        mockBundles.add(bundle);
-        when(bundleService.listAll()).thenReturn(mockBundles);
-        mockMvc.perform(get("/bundle/"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("bundle/list"))
-                .andExpect(model().attribute("bundles", mockBundles));
+    public void whenNewBundle_thenReturnBundleForm() throws Exception {
+        String expectedView = "bundle/bundleform";
 
-        verify(bundleService, times(1)).listAll();
-        verifyNoMoreInteractions(bundleService);
-    }
+        String actualView = bundleController.newBundle(model);
 
-    @Test
-    public void whenGetNewBundle_thenReturnBundleForm() throws Exception {
-        mockMvc.perform(get("/bundle/new"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("bundle/bundleform"))
-                .andExpect(model().attributeExists("bundleForm"));
+        assertThat(actualView).isEqualTo(expectedView);
+        verify(model, times(1)).addAttribute(eq("bundleForm"), any(BundleForm.class));
+        verifyNoMoreInteractions(model);
     }
 
     @Test
     public void whenShowBundle_thenFetchGivenBundleAndReturnViewWithIt() throws Exception {
-        Bundle mockBundle = mock(Bundle.class);
-        when(bundleService.getById(anyInt())).thenReturn(mockBundle);
+        Bundle bundle = new Bundle();
+        bundle.setId(1);
+        bundle.setName("bundle");
+        when(bundleService.getById(1)).thenReturn(bundle);
+        String expectedView = "bundle/show";
 
-        mockMvc.perform(get("/bundle/show/{id}", 1))
-                .andExpect(status().isOk())
-                .andExpect(view().name("bundle/show"))
-                .andExpect(model().attribute("bundle", mockBundle));
+        String actualView = bundleController.showBundle(1, model);
 
-        verify(bundleService, times(1)).getById(anyInt());
+        assertThat(actualView).isEqualTo(expectedView);
+        verify(model, times(1)).addAttribute("bundle", bundle);
+        verify(bundleService, times(1)).getById(1);
         verifyNoMoreInteractions(bundleService);
+        verifyNoMoreInteractions(model);
     }
 
     @Test
-    public void whenEditGivenId_thenRetrieveThatBundleAndReturnBundleForm() throws Exception {
-        Bundle mockBundle = mock(Bundle.class);
-        BundleToBundleForm bundleToBundleFormMock = mock(BundleToBundleForm.class);
+    public void whenEditBundle_thenRetrieveThatBundleAndReturnBundleForm() throws Exception {
+        Bundle bundle = new Bundle();
+        bundle.setId(1);
+        bundle.setName("bundle");
+        bundle.setDescription("description");
+        bundle.setImageUrl("url");
+        bundle.setPrice(BigDecimal.valueOf(10));
 
-        BundleForm bundleFormMock = mock(BundleForm.class);
-        bundleFormMock.setBundleId(1);
-        bundleFormMock.setBundleDescription("description");
-        bundleFormMock.setBundleName("name");
-        bundleFormMock.setBundleImageUrl("url");
-        bundleFormMock.setBundlePrice(BigDecimal.valueOf(10));
-        bundleFormMock.setBundleVersion(10);
-        bundleFormMock.setBundlePruductIds(Arrays.asList(1,2));
 
-        when(bundleService.getById(anyInt())).thenReturn(mockBundle);
-        when(bundleToBundleFormMock.convert(mockBundle)).thenReturn(bundleFormMock);
+        BundleForm bundleForm = new BundleForm();
+        bundleForm.setBundleId(1);
+        bundleForm.setBundleDescription("description");
+        bundleForm.setBundleName("bundle");
+        bundleForm.setBundleImageUrl("url");
+        bundleForm.setBundlePrice(BigDecimal.valueOf(10));
+        bundleForm.setBundlePruductIds(Arrays.asList(1,2));
 
-        mockMvc.perform(get("/bundle/edit/{id}", 1))
-                .andExpect(status().isOk())
-                .andExpect(view().name("bundle/bundleform"))
-                .andExpect(model().attribute("bundleForm", bundleFormMock));
+        when(bundleService.getById(1)).thenReturn(bundle);
+        when(bundleToBundleForm.convert(bundle)).thenReturn(bundleForm);
 
-        verify(bundleService, times(1)).getById(anyInt());
-        BundleForm actualBundleForm = verify(bundleToBundleFormMock, times(1)).convert(mockBundle);
-        assertThat(actualBundleForm).isEqualTo(bundleFormMock);
+        String expectedView = "bundle/bundleform";
+
+        String actualView = bundleController.editBundleForm(1, model);
+
+        assertThat(actualView).isEqualTo(expectedView);
+        verify(model, times(1)).addAttribute("bundleForm", bundleForm);
+        verify(bundleService, times(1)).getById(1);
+        verify(bundleToBundleForm, times(1)).convert(bundle);
         verifyNoMoreInteractions(bundleService);
-        verifyNoMoreInteractions(bundleToBundleFormMock);
+        verifyNoMoreInteractions(bundleToBundleForm);
+        verifyNoMoreInteractions(model);
     }
 
     @Test
     public void givenValidBundleForm_whenSaveBundle_thenBundleIsSavedIntoDbAndRedirectToShowGivenBundle() throws Exception {
-        Bundle bundleMock = mock(Bundle.class);
-        bundleMock.setId(1);
-        bundleMock.setDescription("description");
-        bundleMock.setImageUrl("url");
-        bundleMock.setName("name");
-        bundleMock.setPrice(BigDecimal.valueOf(10));
+        Bundle bundle = new Bundle();
+        bundle.setId(1);
+        bundle.setDescription("description");
+        bundle.setImageUrl("url");
+        bundle.setName("name");
+        bundle.setPrice(BigDecimal.valueOf(10));
 
-        when(bundleService.saveOrUpdate(any())).thenReturn(bundleMock);
+        BundleForm bundleForm = new BundleForm();
+        bundleForm.setBundleId(1);
+        bundleForm.setBundleDescription("description");
+        bundleForm.setBundleName("bundle");
+        bundleForm.setBundleImageUrl("url");
+        bundleForm.setBundlePrice(BigDecimal.valueOf(10));
+        bundleForm.setBundlePruductIds(Arrays.asList(1,2));
 
-        mockMvc.perform(post("/bundle")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("bundleName", "name")
-                .param("bundleDescription", "description")
-                .param("bundleImageUrl", "url")
-                .param("bundlePrice", "10").with(csrf()))
-                .andExpect(status().isFound())
-                .andExpect(redirectedUrl("/bundle/show/0"));
+        when(bundleFormToBundle.convert(bundleForm)).thenReturn(bundle);
+        when(bundleService.saveOrUpdate(any())).thenReturn(bundle);
+        String expectedView = "redirect:/bundle/show/1";
 
-        verify(bundleService, times(1)).saveOrUpdate(any());
+        String actualView = bundleController.saveOrUpdateBundle(bundleForm, bindingResult);
+
+        assertThat(actualView).isEqualTo(expectedView);
+        verify(bundleService, times(1)).saveOrUpdate(bundle);
+        verify(bundleFormToBundle, times(1)).convert(bundleForm);
         verifyNoMoreInteractions(bundleService);
+        verifyNoMoreInteractions(bundleFormToBundle);
     }
 
     @Test
     public void givenInvalidBundleForm_whenSaveBundle_thenReturnBundleFormAndTheBundleIsNotSavedIntoDb() throws Exception {
-        mockMvc.perform(post("/bundle")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("bundleName", "")
-                .param("bundleDescription", "")
-                .param("bundleImageUrl", "")
-                .param("bundlePrice", "").with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(view().name("bundle/bundleform"));
+        BundleForm bundleForm = new BundleForm();
+        bundleForm.setBundleId(1);
+        bundleForm.setBundleDescription("");
+        bundleForm.setBundleName("");
+        bundleForm.setBundleImageUrl("");
+        String expectedView = "bundle/bundleform";
+        when(bindingResult.hasErrors()).thenReturn(true);
+        String actualView = bundleController.saveOrUpdateBundle(bundleForm, bindingResult);
 
+        assertThat(actualView).isEqualTo(expectedView);
+        verify(bindingResult, times(1)).hasErrors();
+        verifyZeroInteractions(bundleFormToBundle);
         verifyZeroInteractions(bundleService);
     }
 
     @Test
     public void whenDeleteBundle_thenRemoveBundleWithGivenIdFromDbAndAndRedirectToBundleList() throws Exception {
-        mockMvc.perform(get("/bundle/delete/{id}", 1))
-                .andExpect(status().isFound())
-                .andExpect(redirectedUrl("/bundle/list"));
+        String expectedView = "redirect:/bundle/list";
+
+        String actualView = bundleController.deleteBundle(1);
+
+        assertThat(actualView).isEqualTo(expectedView);
         verify(bundleService, times(1)).delete(1);
         verifyNoMoreInteractions(bundleService);
     }

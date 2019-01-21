@@ -49,7 +49,7 @@ public class AdminControllerTest {
     }
 
     @Test
-    public void whenGetAccessDenied_thenAccessDeniedView() throws Exception {
+    public void whenAccessDenied_thenAccessDeniedView() throws Exception {
         String expectedView = "access_denied";
 
         String actualView = adminController.notAuth();
@@ -58,7 +58,7 @@ public class AdminControllerTest {
     }
 
     @Test
-    public void whenGetWorkInProgress_thenReturnWorkInProgressView() throws Exception {
+    public void whenWorkInProgress_thenReturnWorkInProgressView() throws Exception {
         String expectedView = "workinprogress";
 
         String actualView = adminController.workInProgressPages();
@@ -67,7 +67,7 @@ public class AdminControllerTest {
     }
 
     @Test
-    public void whenGetLogin_thenReturnLoginView() throws Exception {
+    public void whenLogin_thenReturnLoginView() throws Exception {
         String expectedView = "login";
 
         String actualView = adminController.loginForm();
@@ -76,7 +76,7 @@ public class AdminControllerTest {
     }
 
     @Test
-    public void whenGetAdmin_thenReturnViewAdmin() throws Exception {
+    public void whenAdmin_thenReturnViewAdmin() throws Exception {
         String expectedView = "admin";
 
         String actualView = adminController.admin(model);
@@ -87,7 +87,7 @@ public class AdminControllerTest {
     }
 
     @Test
-    public void whenGetEvictCache_thenReturnRedirectToAdmin() throws Exception {
+    public void whenEvictCache_thenReturnRedirectToAdmin() throws Exception {
         String expectedView = "redirect:/admin";
 
         String actualView = adminController.evictcache();
@@ -96,7 +96,7 @@ public class AdminControllerTest {
     }
 
     @Test
-    public void whenGetLogout_thenReturnRedirectToStore() throws Exception {
+    public void whenLogout_thenReturnRedirectToStore() throws Exception {
         String expectedView = "redirect:/store";
 
         String actualView = adminController.logout(mock(HttpServletRequest.class), mock(HttpServletResponse.class));
