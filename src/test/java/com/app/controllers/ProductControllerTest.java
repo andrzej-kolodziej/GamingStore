@@ -7,8 +7,12 @@ import com.app.domain.Publisher;
 import com.app.services.DeveloperService;
 import com.app.services.ProductService;
 import com.app.services.PublisherService;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,12 +21,16 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -30,25 +38,30 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        classes = {/*SpringSecurityTestConfig.class,*/ /*SpringSecurityConfig.class*/})
-@TestPropertySource(
-        locations = "classpath:application.properties")
-@AutoConfigureMockMvc(secure = false)
 public class ProductControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @InjectMocks
+    private ProductController productController;
 
-    @MockBean
+    @Mock
     private ProductService productService;
 
-    @MockBean
+    @Mock
     private DeveloperService developerService;
 
-    @MockBean
+    @Mock
     private PublisherService publisherService;
+
+    @Mock
+    private Model model;
+
+    @Mock
+    private BindingResult bindingResult;
+
+    @Before
+    public void init() {
+        MockitoAnnotations.initMocks(this);
+    }
 
     @Test
     public void whenGetProductsList_thenReturnAllProducts() throws Exception {
@@ -60,34 +73,15 @@ public class ProductControllerTest {
         product.setDeveloper(developer);
         products.add(product);
         when(productService.listAll()).thenReturn(products);
+        String expectedView = "product/list";
 
-        mockMvc.perform(get("/product/list"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("product/list"))
-                .andExpect(model().attribute("products", products));
+        String actualView = productController.listAll(model);
 
+        assertThat(actualView).isEqualTo(expectedView);
+        verify(model, times(1)).addAttribute("products", products);
         verify(productService, times(1)).listAll();
         verifyNoMoreInteractions(productService);
-    }
-
-    @Test
-    public void whenGetProductRoot_thenReturnAllProducts() throws Exception {
-        List products = new ArrayList<>();
-        Product product = new Product();
-        product.setName("name");
-        Developer developer = new Developer();
-        developer.setName("developer name");
-        product.setDeveloper(developer);
-        products.add(product);
-        when(productService.listAll()).thenReturn(products);
-
-        mockMvc.perform(get("/product/"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("product/list"))
-                .andExpect(model().attribute("products", products));
-
-        verify(productService, times(1)).listAll();
-        verifyNoMoreInteractions(productService);
+        verifyNoMoreInteractions(model);
     }
 
     @Test
@@ -104,17 +98,20 @@ public class ProductControllerTest {
         when(developerService.listAll()).thenReturn(developers);
         when(publisherService.listAll()).thenReturn(publishers);
 
-        mockMvc.perform(get("/product/new"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("product/productform"))
-                .andExpect(model().attributeExists("productForm"))
-                .andExpect(model().attribute("developers", developers))
-                .andExpect(model().attribute("publishers", publishers));
+        String expectedView = "product/productform";
 
+        String actualView = productController.newProduct(model);
+
+        assertThat(actualView).isEqualTo(expectedView);
+
+        verify(model, times(1)).addAttribute(eq("productForm"), any(ProductForm.class));
+        verify(model, times(1)).addAttribute("developers", developers);
+        verify(model, times(1)).addAttribute("publishers", publishers);
         verify(developerService, times(1)).listAll();
         verify(publisherService, times(1)).listAll();
         verifyNoMoreInteractions(developerService);
         verifyNoMoreInteractions(publisherService);
+        verifyNoMoreInteractions(model);
     }
 
     @Test
@@ -137,44 +134,66 @@ public class ProductControllerTest {
         when(developerService.listAll()).thenReturn(developers);
         when(publisherService.listAll()).thenReturn(publishers);
 
-        mockMvc.perform(get("/product/edit/{id}", 1))
-                .andExpect(status().isOk())
-                .andExpect(view().name("product/productform"))
-                .andExpect(model().attribute("productForm", productForm))
-                .andExpect(model().attribute("developers", developers))
-                .andExpect(model().attribute("publishers", publishers));
+        String expectedView = "product/productform";
 
+        String actualView = productController.saveOrUpdateProduct(1, model);
+
+        assertThat(actualView).isEqualTo(expectedView);
+
+        verify(model, times(1)).addAttribute(eq("productForm"), any(ProductForm.class));
+        verify(model, times(1)).addAttribute("developers", developers);
+        verify(model, times(1)).addAttribute("publishers", publishers);
         verify(productService, times(1)).findProductFormById(productId);
         verify(developerService, times(1)).listAll();
         verify(publisherService, times(1)).listAll();
         verifyNoMoreInteractions(productService);
         verifyNoMoreInteractions(developerService);
         verifyNoMoreInteractions(publisherService);
+        verifyNoMoreInteractions(model);
     }
 
     @Test
     public void givenValidProductForm_whenSaveProduct_thenFetchFromDbByIdProductDeveloperAndPublisherAndSetIntoProductAndPersistThatProductIntoDbAndRedirectToShowGivenProduct()
         throws Exception {
-
-        int productId = 1, developerId = 1, publisherId = 1;
         Product product = new Product();
-        product.setId(productId);
-        when(productService.saveOrUpdateProductForm(any(ProductForm.class))).thenReturn(product);
+        product.setId(1);
+        product.setName("product");
 
-        mockMvc.perform(post("/product")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("productName", "name")
-                .param("productImageUrl", "url")
-                .param("productYoutubeUrl", "url")
-                .param("productPrice", "10")
-                .param("productDeveloper.id", "" + developerId)
-                .param("productPublisher.id", "" + publisherId).with(csrf()))
-                .andExpect(status().isFound())
-                .andExpect(redirectedUrl("/product/show/" + productId));
+        ProductForm productForm = new ProductForm();
+        productForm.setProductName("product");
+        productForm.setProductDescription("description");
+        productForm.setProductImageUrl("url");
+        productForm.setProductYoutubeUrl("url");
+        productForm.setProductPrice(BigDecimal.valueOf(10));
 
-        verify(developerService, times(1)).getById(developerId);
-        verify(publisherService, times(1)).getById(publisherId);
-        verify(productService, times(1)).saveOrUpdateProductForm(any(ProductForm.class));
+        Developer developer = new Developer();
+        developer.setId(1);
+        developer.setName("developer");
+        developer.setDescription("description");
+        developer.setImageUrl("url");
+
+        Publisher publisher = new Publisher();
+        publisher.setId(1);
+        publisher.setName("publisher");
+        publisher.setImageUrl("url");
+        publisher.setDescription("description");
+
+        productForm.setProductPublisher(publisher);
+        productForm.setProductDeveloper(developer);
+
+        when(productService.saveOrUpdateProductForm(productForm)).thenReturn(product);
+        when(developerService.getById(1)).thenReturn(developer);
+        when(publisherService.getById(1)).thenReturn(publisher);
+
+        String expectedView = "redirect:/product/show/1";
+
+        String actualView = productController.saveProduct(productForm, bindingResult);
+
+        assertThat(actualView).isEqualTo(expectedView);
+
+        verify(developerService, times(1)).getById(1);
+        verify(publisherService, times(1)).getById(1);
+        verify(productService, times(1)).saveOrUpdateProductForm(productForm);
         verifyNoMoreInteractions(developerService);
         verifyNoMoreInteractions(publisherService);
         verifyNoMoreInteractions(productService);
@@ -182,15 +201,16 @@ public class ProductControllerTest {
 
     @Test
     public void givenInvalidProductForm_whenSaveProduct_thenReturnFormWithGivenProductAndThatProductIsNotPersistedIntoDb() throws Exception {
-        mockMvc.perform(post("/product")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("productName", "")
-                .param("productImageUrl", "")
-                .param("productYoutubeUrl", "")
-                .param("productPrice", "").with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(view().name("product/productform"));
+        ProductForm productForm = new ProductForm();
+        when(bindingResult.hasErrors()).thenReturn(true);
 
+        String expectedView = "product/productform";
+
+        String actualView = productController.saveProduct(productForm, bindingResult);
+
+        assertThat(actualView).isEqualTo(expectedView);
+
+        verify(bindingResult, times(1)).hasErrors();
         verifyZeroInteractions(developerService);
         verifyZeroInteractions(publisherService);
         verifyZeroInteractions(productService);
@@ -202,21 +222,23 @@ public class ProductControllerTest {
         product.setId(1);
         when(productService.getById(1)).thenReturn(product);
 
-        mockMvc.perform(get("/product/show/{id}", 1))
-                .andExpect(status().isOk())
-                .andExpect(view().name("product/show"))
-                .andExpect(model().attributeExists("product"));
+        String expectedView = "product/show";
 
+        String actualView = productController.showProduct(1, model);
+
+        assertThat(actualView).isEqualTo(expectedView);
+        verify(model, times(1)).addAttribute("product", product);
         verify(productService, times(1)).getById(1);
         verifyNoMoreInteractions(productService);
     }
 
     @Test
     public void whenDeleteProduct_thenRemoveGivenProductFromDbAndRedirectToProductList() throws Exception {
-        mockMvc.perform(get("/product/delete/{id}", 1))
-                .andExpect(status().isFound())
-                .andExpect(redirectedUrl("/product/list"));
+        String expectedView = "redirect:/product/list";
 
+        String actualView = productController.deleteProduct(1);
+
+        assertThat(actualView).isEqualTo(expectedView);
         verify(productService, times(1)).delete(1);
         verifyNoMoreInteractions(productService);
     }
