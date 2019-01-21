@@ -7,9 +7,13 @@ import com.app.domain.Product;
 import com.app.services.DeveloperService;
 import com.app.services.ProductService;
 import com.app.services.PublisherService;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,7 +22,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,32 +37,39 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-
-        classes = {/*SpringSecurityTestConfig.class,*/ /*SpringSecurityConfig.class*/})
-@TestPropertySource(
-        locations = "classpath:application.properties")
-@AutoConfigureMockMvc(secure = false)
 public class DeveloperControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @InjectMocks
+    private DeveloperController developerController;
 
-    @MockBean
+    @Mock
     private DeveloperService developerService;
 
-    @MockBean
+    @Mock
     private ProductService productService;
 
-    @MockBean
+    @Mock
     private PublisherService publisherService;
 
-    @MockBean
+    @Mock
     private DeveloperFormToDeveloper developerFormToDeveloper;
 
-    @MockBean
+    @Mock
     private DeveloperForm developerForm;
+
+    @Mock
+    private HttpServletRequest httpServletRequest;
+
+    @Mock
+    private BindingResult bindingResult;
+
+    @Mock
+    private Model model;
+
+    @Before
+    public void init() {
+        MockitoAnnotations.initMocks(this);
+    }
 
     @Test
     public void whenGetDevelopersList_thenFetchAllDevelopersAndReturnDeveloperList() throws Exception {
@@ -65,36 +79,16 @@ public class DeveloperControllerTest {
         developer.setImageUrl("url");
         developer.setDescription("description");
         developers.add(developer);
-
         when(developerService.listAll()).thenReturn(developers);
+        String expectedView = "developer/list";
 
-        mockMvc.perform(get("/developer/list"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("developer/list"))
-                .andExpect(model().attribute("developers", developers));
+        String actualView = developerController.list(model);
 
+        assertThat(actualView).isEqualTo(expectedView);
+        verify(model, times(1)).addAttribute("developers", developers);
         verify(developerService, times(1)).listAll();
         verifyNoMoreInteractions(developerService);
-    }
-
-    @Test
-    public void whenGetDevelopersRootPath_thenFetchAllDevelopersAndReturnDeveloperList() throws Exception {
-        List developers = new ArrayList<>();
-        Developer developer = new Developer();
-        developer.setName("developer");
-        developer.setImageUrl("url");
-        developer.setDescription("description");
-        developers.add(developer);
-
-        when(developerService.listAll()).thenReturn(developers);
-
-        mockMvc.perform(get("/developer/"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("developer/list"))
-                .andExpect(model().attribute("developers", developers));
-
-        verify(developerService, times(1)).listAll();
-        verifyNoMoreInteractions(developerService);
+        verifyNoMoreInteractions(model);
     }
 
     @Test
@@ -104,24 +98,27 @@ public class DeveloperControllerTest {
         developer.setName("developer");
         developer.setImageUrl("url");
         developer.setDescription("description");
+        when(developerService.getById(1)).thenReturn(developer);
+        String expectedView = "developer/show";
 
-        when(developerService.getById(anyInt())).thenReturn(developer);
+        String actualView = developerController.show(1, model);
 
-        mockMvc.perform(get("/developer/show/{id}", 1))
-                .andExpect(status().isOk())
-                .andExpect(view().name("developer/show"))
-                .andExpect(model().attribute("developer", developer));
-
+        assertThat(actualView).isEqualTo(expectedView);
         verify(developerService, times(1)).getById(anyInt());
+        verify(model, times(1)).addAttribute("developer", developer);
         verifyNoMoreInteractions(developerService);
+        verifyNoMoreInteractions(model);
     }
 
     @Test
     public void whenGetNewDeveloper_thenReturnDeveloperFormView() throws Exception {
-        mockMvc.perform(get("/developer/new"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("developer/developerform"))
-                .andExpect(model().attributeExists("developerForm"));
+        String expectedView = "developer/developerform";
+
+        String actualView = developerController.newDeveloper(model);
+
+        assertThat(actualView).isEqualTo(expectedView);
+        verify(model, times(1)).addAttribute(eq("developerForm"), any(DeveloperForm.class));
+        verifyNoMoreInteractions(model);
     }
 
     @Test
@@ -132,17 +129,11 @@ public class DeveloperControllerTest {
         developerForm.setDeveloperImageUrl("url");
         developerForm.setDeveloperDescription("description");
         developerForm.setDeveloperProducts(new ArrayList<>());
+        String expectedView = "developer/developerform";
 
-        mockMvc.perform(get("/developer?addProduct")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                /*.param("developerName", "name")
-                .param("developerImageUrl", "url")
-                .param("developerId", "1")
-                .param("developerDescription", "description"))*/
-                .flashAttr("developerForm", developerForm))
-                .andExpect(status().isOk())
-                .andExpect(view().name("developer/developerform"));
+        String actualView = developerController.addProduct(developerForm);
 
+        assertThat(actualView).isEqualTo(expectedView);
         List<Product> products =  developerForm.getDeveloperProducts();
         assertThat(products.get(products.size()-1)).isNotNull();
         assertThat(products.get(products.size()-1)).isOfAnyClassIn(Product.class);
@@ -158,20 +149,13 @@ public class DeveloperControllerTest {
         developerForm.setDeveloperProducts(new ArrayList<>());
         developerForm.getDeveloperProducts().add(new Product());
         developerForm.getDeveloperProducts().add(new Product());
+        String expectedView = "developer/developerform";
+        when(httpServletRequest.getParameter("removeProduct")).thenReturn("1");
 
-        mockMvc.perform(get("/developer?removeProduct")
-                //.contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                /*.param("developerName", "name")
-                .param("developerImageUrl", "url")
-                .param("developerId", "1")
-                .param("developerDescription", "description")
-                .requestAttr("removeProduct", "1"))*/
-                .requestAttr("removeProduct", 1)
-                .flashAttr("developerForm", developerForm).with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(view().name("developer/developerform"));
+        String actualView = developerController.removeProduct(developerForm, httpServletRequest);
 
-        assertThat(developerForm.getDeveloperProducts().get(1)).isNull();
+        assertThat(actualView).isEqualTo(expectedView);
+        assertThat(developerForm.getDeveloperProducts().size()).isEqualTo(1);
     }
 
     @Test
@@ -181,32 +165,36 @@ public class DeveloperControllerTest {
         developer.setDescription("description");
         developer.setId(1);
         developer.setImageUrl("url");
-        when(developerService.saveOrUpdateDeveloperForm(any(DeveloperForm.class))).thenReturn(developer);
 
-        mockMvc.perform(post("/developer")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("developerName", "name")
-                .param("developerImageUrl", "url")
-                .param("developerId", "1")
-                .param("developerDescription", "description").with(csrf()))
-                .andExpect(status().isFound())
-                .andExpect(redirectedUrl("/developer/show/1"));
+        DeveloperForm developerForm = new DeveloperForm();
+        developerForm.setDeveloperName("name");
+        developerForm.setDeveloperDescription("description");
+        developerForm.setDeveloperId(1);
+        developerForm.setDeveloperImageUrl("url");
 
+        when(developerService.saveOrUpdateDeveloperForm(developerForm)).thenReturn(developer);
+        String expectedView = "redirect:/developer/show/1";
+
+        String actualView = developerController.save(developerForm, bindingResult);
+
+        assertThat(actualView).isEqualTo(expectedView);
         verify(developerService, times(1)).saveOrUpdateDeveloperForm(any(DeveloperForm.class));
         verifyNoMoreInteractions(developerService);
     }
 
     @Test
     public void givenInvalidDeveloperForm_whenSaveDeveloper_thenDoNotSaveDeveloperIntoDbAndReturnDeveloperForm() throws Exception {
-        mockMvc.perform(post("/developer")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("developerName", "")
-                .param("developerImageUrl", "")
-                .param("developerId", "1")
-                .param("developerDescription", "").with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(view().name("developer/developerform"));
+        DeveloperForm developerForm = new DeveloperForm();
+        developerForm.setDeveloperName("");
+        developerForm.setDeveloperDescription("");
+        developerForm.setDeveloperId(1);
+        developerForm.setDeveloperImageUrl("");
+        when(bindingResult.hasErrors()).thenReturn(true);
+        String expectedView = "developer/developerform";
 
+        String actualView = developerController.save(developerForm, bindingResult);
+
+        assertThat(actualView).isEqualTo(expectedView);
         verifyZeroInteractions(developerService);
     }
 
@@ -217,22 +205,25 @@ public class DeveloperControllerTest {
         developerForm.setDeveloperDescription("description");
         developerForm.setDeveloperId(1);
         developerForm.setDeveloperImageUrl("url");
-        when(developerService.getDeveloperFormById(anyInt())).thenReturn(developerForm);
+        when(developerService.getDeveloperFormById(1)).thenReturn(developerForm);
+        String expectedView = "developer/developerform";
 
-        mockMvc.perform(get("/developer/edit/{id}", 1))
-                .andExpect(status().isOk())
-                .andExpect(view().name("developer/developerform"))
-                .andExpect(model().attribute("developerForm", developerForm));
+        String actualView = developerController.edit(1, model);
 
+        assertThat(actualView).isEqualTo(expectedView);
+        verify(model ,times(1)).addAttribute("developerForm", developerForm);
         verify(developerService,  times(1)).getDeveloperFormById(anyInt());
         verifyNoMoreInteractions(developerService);
+        verifyNoMoreInteractions(model);
     }
 
     @Test
     public void whenDeleteDeveloper_thenRemoveDeveloperFromDbAndRedirectToDeveloperList() throws Exception {
-        mockMvc.perform(get("/developer/delete/{id}", 1))
-                .andExpect(status().isFound())
-                .andExpect(redirectedUrl("/developer/list"));
+        String expectedView = "redirect:/developer/list";
+
+        String actualView = developerController.delete(1);
+
+        assertThat(actualView).isEqualTo(expectedView);
 
         verify(developerService, times(1)).delete(1);
         verifyNoMoreInteractions(developerService);
