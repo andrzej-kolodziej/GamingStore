@@ -5,6 +5,9 @@ import com.app.configuration.SpringSecurityTestConfig;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -19,64 +22,85 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.ui.Model;
 import org.springframework.web.context.WebApplicationContext;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
-        /*classes = SpringSecurityTestConfig.class*/)
-@TestPropertySource(
-        locations = "classpath:application.properties")
-@AutoConfigureMockMvc
 public class AdminControllerTest {
-    @Autowired
-    private MockMvc mockMvc;
 
-    @Test
-    public void whenGetAccessDenied_thenReturnOkStatusAndAccessDeniedView() throws Exception {
-        mockMvc.perform(get("/access_denied"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("access_denied"));
+    @InjectMocks
+    private AdminController adminController;
+
+    @Mock
+    private Model model;
+
+    @Before
+    public void init() {
+        MockitoAnnotations.initMocks(this);
     }
 
     @Test
-    public void whenGetWorkInProgress_thenReturnOkStatusAndWorkInProgressView() throws Exception {
-        mockMvc.perform(get("/workinprogress"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("workinprogress"));
+    public void whenGetAccessDenied_thenAccessDeniedView() throws Exception {
+        String expectedView = "access_denied";
+
+        String actualView = adminController.notAuth();
+
+        assertThat(actualView).isEqualTo(expectedView);
     }
 
     @Test
-    public void whenGetLogin_thenReturnOkStatusAndLoginView() throws Exception {
-        mockMvc.perform(get("/login"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("login"));
+    public void whenGetWorkInProgress_thenReturnWorkInProgressView() throws Exception {
+        String expectedView = "workinprogress";
+
+        String actualView = adminController.workInProgressPages();
+
+        assertThat(actualView).isEqualTo(expectedView);
     }
 
     @Test
-    public void whenGetAdmin_thenReturnOkStatusAndViewAdmin() throws Exception {
-        mockMvc.perform(get("/admin"))
-                .andExpect(status().isOk())
-                .andExpect(model().attribute("initaited", true))
-                .andExpect(view().name("admin"));
+    public void whenGetLogin_thenReturnLoginView() throws Exception {
+        String expectedView = "login";
+
+        String actualView = adminController.loginForm();
+
+        assertThat(actualView).isEqualTo(expectedView);
     }
 
     @Test
-    public void whenGetEvictCache_thenReturnOkStatusAndRedirectToAdmin() throws Exception {
-        mockMvc.perform(get("/evictcache"))
-                .andExpect(status().isOk())
-                .andExpect(redirectedUrl("http://localhost/admin"));
+    public void whenGetAdmin_thenReturnViewAdmin() throws Exception {
+        String expectedView = "admin";
+
+        String actualView = adminController.admin(model);
+
+        assertThat(actualView).isEqualTo(expectedView);
+        verify(model, times(1)).addAttribute("initaited", true);
+        verifyNoMoreInteractions(model);
     }
 
     @Test
-    public void whenGetLogout_thenReturnOkStatusAndRedirectToStore() throws Exception {
-        mockMvc.perform(get("/logout"))
-                .andExpect(status().isOk())
-                .andExpect(redirectedUrl("http://localhost/store"));
+    public void whenGetEvictCache_thenReturnRedirectToAdmin() throws Exception {
+        String expectedView = "redirect:/admin";
+
+        String actualView = adminController.evictcache();
+
+        assertThat(actualView).isEqualTo(expectedView);
+    }
+
+    @Test
+    public void whenGetLogout_thenReturnRedirectToStore() throws Exception {
+        String expectedView = "redirect:/store";
+
+        String actualView = adminController.logout(mock(HttpServletRequest.class), mock(HttpServletResponse.class));
+
+        assertThat(actualView).isEqualTo(expectedView);
     }
 }
