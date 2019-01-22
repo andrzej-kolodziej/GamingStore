@@ -107,7 +107,7 @@ public class PurchaseCompleteController {
         return "thankyou";
     }
 
-    private BigDecimal totalPriceCalulator(List<CartDetail> cartDetails){
+    BigDecimal totalPriceCalulator(List<CartDetail> cartDetails){
         BigDecimal totalPrice = new BigDecimal("0.00");
         for (CartDetail cartDetail : cartDetails){
             totalPrice = totalPrice.add(cartDetail.getProduct().getPrice());
